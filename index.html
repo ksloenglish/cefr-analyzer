@@ -1,0 +1,1695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CEFR Passage Analyzer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --a1-color: #d1fae5;
+            --a1-text: #065f46;
+            --a2-color: #a7f3d0;
+            --a2-text: #064e3b;
+            --b1-color: #fef3c7;
+            --b1-text: #92400e;
+            --b2-color: #fcd34d;
+            --b2-text: #78350f;
+            --c1-color: #fca5a5;
+            --c1-text: #7f1d1d;
+            --c2-color: #c084fc;
+            --c2-text: #3b0764;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --border-color: #e5e7eb;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 20px;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        header { text-align: center; margin-bottom: 40px; }
+        h1 { font-size: 2.25rem; font-weight: 800; color: #111827; margin: 0; letter-spacing: -0.025em; }
+        h1 span { color: var(--primary); }
+        h2 { font-size: 1.25rem; font-weight: 600; color: #374151; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+
+        .section {
+            margin-bottom: 35px;
+            padding: 25px;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            background: #f9fafb;
+            transition: transform 0.2s ease;
+        }
+        .section:hover { border-color: #d1d5db; }
+
+        .file-upload-wrapper { position: relative; text-align: center; }
+        .file-upload-label {
+            display: block; padding: 30px; border: 2px dashed #cbd5e1;
+            border-radius: 12px; background: white; cursor: pointer; transition: all 0.3s ease;
+        }
+        .file-upload-label:hover { border-color: var(--primary); background: #eef2ff; }
+        .file-upload-icon { font-size: 2rem; margin-bottom: 10px; display: block; color: var(--text-muted); }
+        input[type="file"] { display: none; }
+
+        .format-instruction {
+            margin-top: 15px; font-size: 0.9rem; color: var(--text-muted);
+            background: #fff; padding: 15px; border-radius: 8px; border-left: 4px solid var(--primary);
+        }
+        .code-block {
+            display: block; font-family: 'Monaco', 'Consolas', monospace;
+            background: #f1f5f9; padding: 10px; margin-top: 8px;
+            border-radius: 6px; color: #334155; font-size: 0.85rem;
+        }
+
+        textarea {
+            width: 100%; height: 180px; padding: 15px;
+            border: 1px solid #d1d5db; border-radius: 12px;
+            resize: vertical; font-family: inherit; font-size: 1rem;
+            box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
+
+        .btn-group { display: flex; gap: 15px; margin-top: 20px; }
+        button {
+            padding: 12px 24px; border: none; border-radius: 8px;
+            cursor: pointer; font-weight: 600; font-size: 1rem;
+            transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center;
+        }
+        .btn-analyze {
+            background-color: var(--primary); color: white; flex: 2;
+            box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.4);
+        }
+        .btn-analyze:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
+        .btn-clear { background-color: white; color: var(--text-muted); border: 1px solid #d1d5db; flex: 1; }
+        .btn-clear:hover { background-color: #f3f4f6; color: #111827; }
+
+        #output-area { display: none; animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .highlighted-text {
+            font-size: 1.1rem; line-height: 1.9; padding: 25px;
+            background: white; border: 1px solid #e5e7eb; border-radius: 12px;
+            white-space: pre-wrap; margin-bottom: 25px;
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.02);
+        }
+
+        .cefr-word {
+            padding: 2px 6px; border-radius: 4px; font-weight: 500;
+            margin: 0 1px; position: relative; cursor: default; transition: filter 0.2s;
+        }
+        .cefr-word:hover { filter: brightness(0.95); }
+        .cefr-word:hover::after {
+            content: attr(data-info); position: absolute; bottom: 120%; left: 50%;
+            transform: translateX(-50%); background: #1f2937; color: white;
+            padding: 6px 10px; border-radius: 6px; font-size: 0.75rem;
+            white-space: nowrap; z-index: 100; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            pointer-events: none;
+        }
+        .cefr-word:hover::before {
+            content: ''; position: absolute; bottom: 110%; left: 50%;
+            transform: translateX(-50%); border-width: 5px; border-style: solid;
+            border-color: #1f2937 transparent transparent transparent; z-index: 100;
+        }
+
+        .level-A1 { background-color: var(--a1-color); color: var(--a1-text); border-bottom: 2px solid #6ee7b7; }
+        .level-A2 { background-color: var(--a2-color); color: var(--a2-text); border-bottom: 2px solid #34d399; }
+        .level-B1 { background-color: var(--b1-color); color: var(--b1-text); border-bottom: 2px solid #fcd34d; }
+        .level-B2 { background-color: var(--b2-color); color: var(--b2-text); border-bottom: 2px solid #f59e0b; }
+        .level-C1 { background-color: var(--c1-color); color: var(--c1-text); border-bottom: 2px solid #ef4444; }
+        .level-C2 { background-color: var(--c2-color); color: var(--c2-text); border-bottom: 2px solid #a855f7; }
+        .level-XX { color: #4b5563; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .stat-card {
+            background: white; padding: 15px; text-align: center;
+            border-radius: 12px; border: 1px solid #f3f4f6;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: transform 0.2s;
+        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .stat-value { font-size: 1.75rem; font-weight: 800; display: block; margin-bottom: 5px; color: #111827; }
+        .stat-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; }
+        .stat-percent { display: block; font-size: 0.7rem; color: #9ca3af; margin-bottom: 4px; }
+
+        .verdict-box {
+            background: linear-gradient(to right, #eff6ff, #ffffff);
+            border-left: 6px solid var(--primary); padding: 25px;
+            border-radius: 0 12px 12px 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .verdict-title { font-weight: 700; font-size: 1.2rem; display: block; margin-bottom: 10px; color: #1e3a8a; }
+
+        .legend { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px; font-size: 0.85rem; justify-content: flex-end; }
+        .legend-item { display: flex; align-items: center; gap: 6px; font-weight: 500; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+        .brand-bar {
+            max-width: 900px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .brand-logo {
+            width: 38px; height: 38px; border-radius: 10px;
+            background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 100%);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            flex-shrink: 0;
+        }
+        .brand-logo svg { width: 22px; height: 22px; }
+        .brand-name {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-weight: 800; font-size: 1.35rem;
+            color: #ffffff; letter-spacing: 0.02em;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.2);
+        }
+        .brand-name span {
+            font-weight: 500; opacity: 0.85;
+        }
+
+        .site-footer {
+            max-width: 900px;
+            margin: 24px auto 0;
+            text-align: center;
+            padding: 16px 20px;
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.65);
+            letter-spacing: 0.03em;
+        }
+        .site-footer strong {
+            color: rgba(255,255,255,0.85);
+            font-weight: 600;
+        }
+
+        @media (max-width: 600px) {
+            body { padding: 20px 10px; }
+            .container { padding: 20px; }
+            .btn-group { flex-direction: column; }
+            h1 { font-size: 1.75rem; }
+            .brand-name { font-size: 1.15rem; }
+            .brand-logo { width: 32px; height: 32px; border-radius: 8px; }
+            .brand-logo svg { width: 18px; height: 18px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="brand-bar">
+    <div class="brand-logo">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 19.5V4.5C4 3.67 4.67 3 5.5 3H18.5C19.33 3 20 3.67 20 4.5V19.5C20 20.33 19.33 21 18.5 21H5.5C4.67 21 4 20.33 4 19.5Z" fill="#6366f1" opacity="0.15"/>
+            <path d="M4 4.5C4 3.67 4.67 3 5.5 3H18.5C19.33 3 20 3.67 20 4.5V19.5C20 20.33 19.33 21 18.5 21H5.5C4.67 21 4 20.33 4 19.5V4.5Z" stroke="#4f46e5" stroke-width="1.5"/>
+            <path d="M8 7H16M8 11H14M8 15H12" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+    </div>
+    <div class="brand-name">K S Lo <span>English</span></div>
+</div>
+
+<div class="container">
+    <header>
+        <h1>CEFR <span>Text Analyzer</span></h1>
+        <p style="color: var(--text-muted); margin-top: 10px;">Analyze text complexity using the pre-loaded Oxford 5000 and Cambridge C2 word lists or other word lists.</p>
+    </header>
+
+    <div class="section">
+        <h2>
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+            1. Data Source
+        </h2>
+        <div class="file-upload-wrapper">
+            <label for="csvFile" class="file-upload-label" id="file-label">
+                <span class="file-upload-icon">📄</span>
+                <span id="file-text"><strong>Click to upload CSV</strong> or drag and drop</span>
+                <span id="file-hint" style="display:block;margin-top:8px;font-size:0.8rem;color:#9ca3af;">Or keep using the pre-loaded Oxford 5000 + Cambridge C2 list</span>
+            </label>
+            <input type="file" id="csvFile" accept=".csv">
+        </div>
+        <div class="format-instruction">
+            <strong>Required CSV format:</strong> Each row should contain
+            <code class="code-block">CEFR,Word,Part of Speech<br>Example: B2,navigate,v</code>
+        </div>
+        <div id="file-status" style="margin-top: 10px; font-size: 0.9rem; color: #059669; font-weight: 600; text-align: center;"></div>
+    </div>
+
+    <div class="section">
+        <h2>
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+            2. Reading Passage
+        </h2>
+        <textarea id="inputText" placeholder="Paste the text you want to analyze here..."></textarea>
+        <div class="btn-group">
+            <button class="btn-analyze" onclick="analyzePassage()">Analyze Text</button>
+            <button class="btn-clear" onclick="clearAll()">Clear All</button>
+        </div>
+    </div>
+
+    <div id="output-area" class="section" style="border-color: var(--primary);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="margin: 0;">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                3. Analysis Results
+            </h2>
+            <div class="legend">
+                <div class="legend-item"><span class="dot" style="background:var(--a1-color)"></span> A1</div>
+                <div class="legend-item"><span class="dot" style="background:var(--a2-color)"></span> A2</div>
+                <div class="legend-item"><span class="dot" style="background:var(--b1-color)"></span> B1</div>
+                <div class="legend-item"><span class="dot" style="background:var(--b2-color)"></span> B2</div>
+                <div class="legend-item"><span class="dot" style="background:var(--c1-color)"></span> C1</div>
+                <div class="legend-item"><span class="dot" style="background:var(--c2-color)"></span> C2</div>
+            </div>
+        </div>
+
+        <div id="highlighted-content" class="highlighted-text"></div>
+
+        <div class="stats-grid">
+            <div class="stat-card"><span class="stat-value" id="count-total">0</span><span class="stat-label">Total Words</span></div>
+            <div class="stat-card" style="border-bottom: 3px solid var(--a1-color)"><span class="stat-value" id="count-a1">0</span><span class="stat-percent" id="percent-a1"></span><span class="stat-label">A1</span></div>
+            <div class="stat-card" style="border-bottom: 3px solid var(--a2-color)"><span class="stat-value" id="count-a2">0</span><span class="stat-percent" id="percent-a2"></span><span class="stat-label">A2</span></div>
+            <div class="stat-card" style="border-bottom: 3px solid var(--b1-color)"><span class="stat-value" id="count-b1">0</span><span class="stat-percent" id="percent-b1"></span><span class="stat-label">B1</span></div>
+            <div class="stat-card" style="border-bottom: 3px solid var(--b2-color)"><span class="stat-value" id="count-b2">0</span><span class="stat-percent" id="percent-b2"></span><span class="stat-label">B2</span></div>
+            <div class="stat-card" style="border-bottom: 3px solid var(--c1-color)"><span class="stat-value" id="count-c1">0</span><span class="stat-percent" id="percent-c1"></span><span class="stat-label">C1</span></div>
+            <div class="stat-card" style="border-bottom: 3px solid var(--c2-color)"><span class="stat-value" id="count-c2">0</span><span class="stat-percent" id="percent-c2"></span><span class="stat-label">C2</span></div>
+            <div class="stat-card"><span class="stat-value" id="count-off" style="color: #9ca3af;">0</span><span class="stat-percent" id="percent-off"></span><span class="stat-label">Off List</span></div>
+        </div>
+
+        <div class="verdict-box">
+            <span class="verdict-title">Final Verdict</span>
+            <p id="verdict-text" style="margin: 0; color: #374151;">Waiting for analysis...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    let dictionary = new Map();
+    let dictionaryWithPos = new Map();
+    let isFileLoaded = false;
+
+    const DEFAULT_CSV_URL = 'https://pfst.cf2.poecdn.net/base/text/11ce500d4f8d7a245d61f5d6c63092a32da19d4ff28b0f6b5f804a66b6e97d47';
+    const DEFAULT_CSV_NAME = 'Oxford-5k-Cambridge-C2.csv';
+
+    // ============================================================
+    // SUPPLEMENTARY WORD LIST
+    // Common words that may be missing from Oxford 5000
+    // ============================================================
+    
+    const SUPPLEMENTARY_WORDS = new Map([
+        // Technology & modern terms
+        ['email', 'A2'], ['emails', 'A2'], ['online', 'A2'], ['website', 'A2'], 
+        ['internet', 'A2'], ['computer', 'A1'], ['phone', 'A1'], ['video', 'A2'],
+        ['app', 'A2'], ['apps', 'A2'], ['digital', 'B1'], ['wifi', 'A2'],
+        ['laptop', 'A2'], ['smartphone', 'A2'], ['download', 'A2'], ['upload', 'B1'],
+        ['click', 'A2'], ['username', 'A2'], ['password', 'A2'], ['login', 'A2'],
+        
+        // Common school/work terms
+        ['library', 'A2'], ['exhibition', 'B1'], ['exhibitions', 'B1'],
+        ['secretary', 'B1'], ['photography', 'B1'], ['photographer', 'B1'],
+        ['photographers', 'B1'], ['photograph', 'B1'], ['photographs', 'B1'],
+        ['artistic', 'B1'], ['portrait', 'B1'], ['portraits', 'B1'],
+        ['landscape', 'B1'], ['landscapes', 'B1'], ['imagination', 'B1'],
+        ['creative', 'B1'], ['creativity', 'B1'], ['gallery', 'B1'],
+        ['presentation', 'B1'], ['presentations', 'B1'], ['certificate', 'B1'],
+        ['homework', 'A1'], ['classroom', 'A1'], ['textbook', 'A2'],
+        
+        // Common everyday words
+        ['favourite', 'A1'], ['favorites', 'A1'], ['color', 'A1'], ['colour', 'A1'],
+        ['center', 'A2'], ['centre', 'A2'], ['organize', 'B1'], ['organise', 'B1'],
+        ['recognize', 'B1'], ['recognise', 'B1'], ['realize', 'B1'], ['realise', 'B1'],
+        ['favourite', 'A1'], ['theater', 'A2'], ['theatre', 'A2'],
+        ['neighbor', 'A2'], ['neighbour', 'A2'], ['behavior', 'B1'], ['behaviour', 'B1'],
+        
+        // Time expressions
+        ['today', 'A1'], ['tomorrow', 'A1'], ['yesterday', 'A1'], ['tonight', 'A1'],
+        ['weekend', 'A1'], ['weekday', 'A2'], ['everyday', 'A1'], ['sometime', 'A2'],
+        ['sometimes', 'A1'], ['always', 'A1'], ['never', 'A1'], ['often', 'A1'],
+        
+        // Numbers and ordinals
+        ['first', 'A1'], ['second', 'A1'], ['third', 'A1'], ['fourth', 'A1'],
+        ['fifth', 'A1'], ['sixth', 'A1'], ['seventh', 'A2'], ['eighth', 'A2'],
+        ['ninth', 'A2'], ['tenth', 'A2'], ['hundred', 'A1'], ['thousand', 'A1'],
+        ['million', 'A2'], ['billion', 'B1'],
+        
+        // Question words and basics
+        ['who', 'A1'], ['what', 'A1'], ['where', 'A1'], ['when', 'A1'],
+        ['why', 'A1'], ['how', 'A1'], ['which', 'A1'],
+        
+        // Pronouns
+        ['everyone', 'A1'], ['everybody', 'A1'], ['everything', 'A1'],
+        ['someone', 'A1'], ['somebody', 'A1'], ['something', 'A1'],
+        ['anyone', 'A1'], ['anybody', 'A1'], ['anything', 'A1'],
+        ['no one', 'A1'], ['nobody', 'A1'], ['nothing', 'A1'],
+        
+        // Common verbs missing forms
+        ['gonna', 'A2'], ['wanna', 'A2'], ['gotta', 'A2'],
+        
+        // Connectors
+        ['also', 'A1'], ['too', 'A1'], ['either', 'A2'], ['neither', 'A2'],
+        ['both', 'A1'], ['however', 'B1'], ['therefore', 'B2'], ['although', 'B1'],
+        ['though', 'B1'], ['unless', 'B1'], ['whether', 'B1'], ['whereas', 'B2'],
+        
+        // Common adjectives
+        ['okay', 'A1'], ['ok', 'A1'], ['nice', 'A1'], ['great', 'A1'],
+        ['good', 'A1'], ['bad', 'A1'], ['best', 'A1'], ['worst', 'A2'],
+        ['better', 'A1'], ['worse', 'A2'], ['favourite', 'A1'],
+        
+        // Common nouns
+        ['mom', 'A1'], ['dad', 'A1'], ['mum', 'A1'], ['mommy', 'A1'], ['daddy', 'A1'],
+        ['grandma', 'A1'], ['grandpa', 'A1'], ['granny', 'A1'],
+        ['kid', 'A1'], ['kids', 'A1'], ['guy', 'A2'], ['guys', 'A2'],
+        ['stuff', 'A2'], ['thing', 'A1'], ['things', 'A1'],
+        
+        // Expressions
+        ['hello', 'A1'], ['hi', 'A1'], ['bye', 'A1'], ['goodbye', 'A1'],
+        ['please', 'A1'], ['thanks', 'A1'], ['sorry', 'A1'], ['excuse', 'A1'],
+        ['welcome', 'A1'], ['congratulations', 'A2'],
+        
+        // Phrasal idiom components that appear as single words
+        ['breath', 'B1'], ['vote', 'B1'], ['votes', 'B1'],
+        ['soar', 'B2'], ['soars', 'B2'], ['soaring', 'B2']
+    ]);
+
+    // ============================================================
+    // BRITISH/AMERICAN SPELLING VARIANTS
+    // ============================================================
+    
+    const SPELLING_VARIANTS = new Map([
+        ['colour', 'color'], ['colours', 'colors'], ['coloured', 'colored'], ['colouring', 'coloring'],
+        ['favour', 'favor'], ['favours', 'favors'], ['favoured', 'favored'], ['favouring', 'favoring'],
+        ['favourite', 'favorite'], ['favourites', 'favorites'],
+        ['honour', 'honor'], ['honours', 'honors'], ['honoured', 'honored'], ['honouring', 'honoring'],
+        ['labour', 'labor'], ['labours', 'labors'], ['laboured', 'labored'], ['labouring', 'laboring'],
+        ['neighbour', 'neighbor'], ['neighbours', 'neighbors'], ['neighbouring', 'neighboring'],
+        ['behaviour', 'behavior'], ['behaviours', 'behaviors'],
+        ['flavour', 'flavor'], ['flavours', 'flavors'], ['flavoured', 'flavored'],
+        ['humour', 'humor'], ['humours', 'humors'], ['humoured', 'humored'],
+        ['centre', 'center'], ['centres', 'centers'], ['centred', 'centered'],
+        ['theatre', 'theater'], ['theatres', 'theaters'],
+        ['metre', 'meter'], ['metres', 'meters'],
+        ['litre', 'liter'], ['litres', 'liters'],
+        ['fibre', 'fiber'], ['fibres', 'fibers'],
+        ['analyse', 'analyze'], ['analysed', 'analyzed'], ['analysing', 'analyzing'], ['analyses', 'analyzes'],
+        ['organise', 'organize'], ['organised', 'organized'], ['organising', 'organizing'], ['organises', 'organizes'],
+        ['realise', 'realize'], ['realised', 'realized'], ['realising', 'realizing'], ['realises', 'realizes'],
+        ['recognise', 'recognize'], ['recognised', 'recognized'], ['recognising', 'recognizing'], ['recognises', 'recognizes'],
+        ['apologise', 'apologize'], ['apologised', 'apologized'], ['apologising', 'apologizing'],
+        ['criticise', 'criticize'], ['criticised', 'criticized'], ['criticising', 'criticizing'],
+        ['emphasise', 'emphasize'], ['emphasised', 'emphasized'], ['emphasising', 'emphasizing'],
+        ['specialise', 'specialize'], ['specialised', 'specialized'], ['specialising', 'specializing'],
+        ['travelling', 'traveling'], ['travelled', 'traveled'], ['traveller', 'traveler'],
+        ['cancelled', 'canceled'], ['cancelling', 'canceling'],
+        ['modelling', 'modeling'], ['modelled', 'modeled'],
+        ['labelling', 'labeling'], ['labelled', 'labeled'],
+        ['jewellery', 'jewelry'],
+        ['grey', 'gray'],
+        ['programme', 'program'], ['programmes', 'programs'],
+        ['catalogue', 'catalog'], ['catalogues', 'catalogs'],
+        ['dialogue', 'dialog'], ['dialogues', 'dialogs'],
+        ['defence', 'defense'], ['defences', 'defenses'],
+        ['offence', 'offense'], ['offences', 'offenses'],
+        ['licence', 'license'], ['licences', 'licenses'],
+        ['practise', 'practice'], ['practised', 'practiced'], ['practising', 'practicing']
+    ]);
+
+    // ============================================================
+    // PROPER NOUNS AND SPECIAL TERMS
+    // ============================================================
+    
+    const PROPER_NOUNS = new Set([
+        // Common first names
+        'timothy', 'cheung', 'james', 'john', 'mary', 'sarah', 'michael', 'jennifer',
+        'david', 'lisa', 'robert', 'susan', 'william', 'jessica', 'richard', 'ashley',
+        'michelle', 'obama', 'marian', 'robinson', 'fraser', 'craig', 'robbie',
+        'harry', 'daisy', 'chan', 'atid', 'chai', 'omer', 'soker', 'zara',
+        'barack', 'joe', 'biden', 'trump', 'hillary', 'clinton',
+        
+        // Places
+        'chicago', 'seoul', 'bangkok', 'thailand', 'korea', 'hong', 'kong', 'australia',
+        'australian', 'america', 'american', 'english', 'british', 'chinese', 'japanese',
+        'thai', 'korean', 'european', 'asian', 'african', 'york', 'london', 'paris',
+        'united', 'states',
+        
+        // Brands/Companies
+        'shein', 'temu', 'ebay', 'facebook', 'marketplace', 'anthropic', 'google',
+        'amazon', 'apple', 'microsoft', 'netflix', 'spotify', 'instagram', 'twitter',
+        
+        // Months
+        'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august',
+        'september', 'october', 'november', 'december',
+        
+        // Days
+        'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'
+    ]);
+
+    // ============================================================
+    // LITERARY VOCABULARY (for advanced text detection)
+    // ============================================================
+    
+    const LITERARY_VOCABULARY = new Set([
+        'clipped', 'wry', 'witty', 'ornery', 'contentious', 'negligent', 'wholly',
+        'durable', 'reverent', 'vicious', 'chastened', 'lawyerly', 'dictatorial',
+        'unyielding', 'freewheeling', 'seething', 'arcane', 'feistiness', 'feisty',
+        'buzzy', 'fumbling', 'intently', 'outright', 'unpurse', 'debuted',
+        'wistful', 'melancholy', 'poignant', 'evocative', 'visceral', 'ethereal',
+        'ephemeral', 'transcendent', 'sublime', 'austere', 'luminous', 'sassy',
+        'infectious', 'limelight', 'scrapped', 'chide', 'bolster', 'recounted'
+    ]);
+
+    // ============================================================
+    // IDIOM PATTERNS (for advanced text detection)
+    // ============================================================
+    
+    const IDIOM_PATTERNS = [
+        { pattern: /rule the roost/gi, level: 'C1+', weight: 3 },
+        { pattern: /chew(ed|ing|s)? (him|her|me|them|us|you) out/gi, level: 'C1+', weight: 3 },
+        { pattern: /in (each other'?s?|one another'?s?) face(s)?/gi, level: 'C1+', weight: 2.5 },
+        { pattern: /honeymoon phase/gi, level: 'C1', weight: 2.5 },
+        { pattern: /crack(ed|ing|s)? up/gi, level: 'C1', weight: 2 },
+        { pattern: /out of the corner of (my|his|her|their) eye/gi, level: 'C1', weight: 2 },
+        { pattern: /laid? down (the )?(law|rules?)/gi, level: 'C1', weight: 2 },
+        { pattern: /on[- ]and[- ]off/gi, level: 'B2', weight: 1.5 },
+        { pattern: /let (it |that |this )?be/gi, level: 'B2', weight: 1.5 },
+        { pattern: /on the face of it/gi, level: 'B2', weight: 1.5 },
+        { pattern: /foot(ing|ed|s)? the bill/gi, level: 'B2', weight: 1.5 },
+        { pattern: /think twice/gi, level: 'B2', weight: 1 },
+        { pattern: /bear(ing|s)? the burden/gi, level: 'B2', weight: 1.5 },
+        { pattern: /take(s)? (your |my |his |her |their )?breath away/gi, level: 'B2', weight: 1.5 },
+        { pattern: /make(s)? (your |my |his |her |their )?(imagination |dreams? )?soar/gi, level: 'B2', weight: 1.5 }
+    ];
+
+    // ============================================================
+    // FIGURATIVE LANGUAGE PATTERNS
+    // ============================================================
+    
+    const FIGURATIVE_PATTERNS = [
+        { pattern: /flame(s)? (inside|within|of)/gi, weight: 2 },
+        { pattern: /keep (the |their |her |his |my )?flame lit/gi, weight: 2.5 },
+        { pattern: /pour(ing|ed)? .{0,20} foundation/gi, weight: 2 },
+        { pattern: /pulse of (something|anything)/gi, weight: 2 }
+    ];
+
+    // ============================================================
+    // COMPLEX SYNTAX PATTERNS
+    // ============================================================
+    
+    const COMPLEX_SYNTAX_PATTERNS = [
+        { pattern: /had I been/gi, weight: 2, type: 'subjunctive_inversion' },
+        { pattern: /were (I|he|she|we|they) to/gi, weight: 2, type: 'subjunctive_inversion' },
+        { pattern: /nor was (I|he|she|it)/gi, weight: 1.5, type: 'inversion' },
+        { pattern: /not only .{5,50} but (also )?/gi, weight: 1, type: 'correlative' },
+        { pattern: /, as .{5,40} would attest/gi, weight: 2, type: 'parenthetical_clause' },
+        { pattern: / – .{10,60} – /g, weight: 1.5, type: 'dash_parenthetical' }
+    ];
+
+    // ============================================================
+    // CONTRACTIONS
+    // ============================================================
+    
+    const CONTRACTIONS = new Map([
+        ["i'm", "be"], ["you're", "be"], ["he's", "be"], ["she's", "be"],
+        ["it's", "be"], ["we're", "be"], ["they're", "be"], ["i've", "have"],
+        ["you've", "have"], ["we've", "have"], ["they've", "have"],
+        ["i'd", "would"], ["you'd", "would"], ["he'd", "would"], ["she'd", "would"],
+        ["we'd", "would"], ["they'd", "would"], ["i'll", "will"], ["you'll", "will"],
+        ["he'll", "will"], ["she'll", "will"], ["we'll", "will"], ["they'll", "will"],
+        ["isn't", "be"], ["aren't", "be"], ["wasn't", "be"], ["weren't", "be"],
+        ["haven't", "have"], ["hasn't", "have"], ["hadn't", "have"],
+        ["won't", "will"], ["wouldn't", "would"], ["don't", "do"],
+        ["doesn't", "do"], ["didn't", "do"], ["can't", "can"],
+        ["couldn't", "could"], ["shouldn't", "should"], ["mightn't", "might"],
+        ["mustn't", "must"], ["let's", "let"], ["that's", "that"],
+        ["who's", "who"], ["what's", "what"], ["here's", "here"],
+        ["there's", "there"], ["where's", "where"], ["how's", "how"]
+    ]);
+
+    // ============================================================
+    // IRREGULAR VERBS AND FORMS
+    // ============================================================
+    
+    const IRREGULAR_VERBS = new Map([
+        ['was', 'be'], ['were', 'be'], ['been', 'be'], ['being', 'be'],
+        ['had', 'have'], ['has', 'have'], ['having', 'have'],
+        ['did', 'do'], ['does', 'do'], ['doing', 'do'], ['done', 'do'],
+        ['went', 'go'], ['gone', 'go'], ['going', 'go'], ['goes', 'go'],
+        ['came', 'come'], ['coming', 'come'], ['comes', 'come'],
+        ['said', 'say'], ['saying', 'say'], ['says', 'say'],
+        ['made', 'make'], ['making', 'make'], ['makes', 'make'],
+        ['took', 'take'], ['taken', 'take'], ['taking', 'take'], ['takes', 'take'],
+        ['got', 'get'], ['gotten', 'get'], ['getting', 'get'], ['gets', 'get'],
+        ['gave', 'give'], ['given', 'give'], ['giving', 'give'], ['gives', 'give'],
+        ['saw', 'see'], ['seen', 'see'], ['seeing', 'see'], ['sees', 'see'],
+        ['knew', 'know'], ['known', 'know'], ['knowing', 'know'], ['knows', 'know'],
+        ['thought', 'think'], ['thinking', 'think'], ['thinks', 'think'],
+        ['told', 'tell'], ['telling', 'tell'], ['tells', 'tell'],
+        ['found', 'find'], ['finding', 'find'], ['finds', 'find'],
+        ['left', 'leave'], ['leaving', 'leave'], ['leaves', 'leave'],
+        ['felt', 'feel'], ['feeling', 'feel'], ['feels', 'feel'],
+        ['became', 'become'], ['becoming', 'become'], ['becomes', 'become'],
+        ['began', 'begin'], ['begun', 'begin'], ['beginning', 'begin'], ['begins', 'begin'],
+        ['kept', 'keep'], ['keeping', 'keep'], ['keeps', 'keep'],
+        ['let', 'let'], ['letting', 'let'], ['lets', 'let'],
+        ['put', 'put'], ['putting', 'put'], ['puts', 'put'],
+        ['set', 'set'], ['setting', 'set'], ['sets', 'set'],
+        ['sat', 'sit'], ['sitting', 'sit'], ['sits', 'sit'],
+        ['stood', 'stand'], ['standing', 'stand'], ['stands', 'stand'],
+        ['ran', 'run'], ['running', 'run'], ['runs', 'run'],
+        ['wrote', 'write'], ['written', 'write'], ['writing', 'write'], ['writes', 'write'],
+        ['read', 'read'], ['reading', 'read'], ['reads', 'read'],
+        ['spoke', 'speak'], ['spoken', 'speak'], ['speaking', 'speak'], ['speaks', 'speak'],
+        ['brought', 'bring'], ['bringing', 'bring'], ['brings', 'bring'],
+        ['bought', 'buy'], ['buying', 'buy'], ['buys', 'buy'],
+        ['caught', 'catch'], ['catching', 'catch'], ['catches', 'catch'],
+        ['taught', 'teach'], ['teaching', 'teach'], ['teaches', 'teach'],
+        ['built', 'build'], ['building', 'build'], ['builds', 'build'],
+        ['sent', 'send'], ['sending', 'send'], ['sends', 'send'],
+        ['spent', 'spend'], ['spending', 'spend'], ['spends', 'spend'],
+        ['fell', 'fall'], ['fallen', 'fall'], ['falling', 'fall'], ['falls', 'fall'],
+        ['held', 'hold'], ['holding', 'hold'], ['holds', 'hold'],
+        ['led', 'lead'], ['leading', 'lead'], ['leads', 'lead'],
+        ['lost', 'lose'], ['losing', 'lose'], ['loses', 'lose'],
+        ['met', 'meet'], ['meeting', 'meet'], ['meets', 'meet'],
+        ['paid', 'pay'], ['paying', 'pay'], ['pays', 'pay'],
+        ['sold', 'sell'], ['selling', 'sell'], ['sells', 'sell'],
+        ['understood', 'understand'], ['understanding', 'understand'], ['understands', 'understand'],
+        ['wore', 'wear'], ['worn', 'wear'], ['wearing', 'wear'], ['wears', 'wear'],
+        ['won', 'win'], ['winning', 'win'], ['wins', 'win'],
+        ['broke', 'break'], ['broken', 'break'], ['breaking', 'break'], ['breaks', 'break'],
+        ['chose', 'choose'], ['chosen', 'choose'], ['choosing', 'choose'], ['chooses', 'choose'],
+        ['drove', 'drive'], ['driven', 'drive'], ['driving', 'drive'], ['drives', 'drive'],
+        ['ate', 'eat'], ['eaten', 'eat'], ['eating', 'eat'], ['eats', 'eat'],
+        ['flew', 'fly'], ['flown', 'fly'], ['flying', 'fly'], ['flies', 'fly'],
+        ['forgot', 'forget'], ['forgotten', 'forget'], ['forgetting', 'forget'], ['forgets', 'forget'],
+        ['grew', 'grow'], ['grown', 'grow'], ['growing', 'grow'], ['grows', 'grow'],
+        ['hid', 'hide'], ['hidden', 'hide'], ['hiding', 'hide'], ['hides', 'hide'],
+        ['lay', 'lie'], ['lain', 'lie'], ['lying', 'lie'], ['lies', 'lie'],
+        ['laid', 'lay'], ['laying', 'lay'], ['lays', 'lay'],
+        ['rose', 'rise'], ['risen', 'rise'], ['rising', 'rise'], ['rises', 'rise'],
+        ['rode', 'ride'], ['ridden', 'ride'], ['riding', 'ride'], ['rides', 'ride'],
+        ['sang', 'sing'], ['sung', 'sing'], ['singing', 'sing'], ['sings', 'sing'],
+        ['swam', 'swim'], ['swum', 'swim'], ['swimming', 'swim'], ['swims', 'swim'],
+        ['threw', 'throw'], ['thrown', 'throw'], ['throwing', 'throw'], ['throws', 'throw'],
+        ['woke', 'wake'], ['woken', 'wake'], ['waking', 'wake'], ['wakes', 'wake'],
+        ['children', 'child'], ['men', 'man'], ['women', 'woman'], ['people', 'person'],
+        ['teeth', 'tooth'], ['feet', 'foot'], ['mice', 'mouse'], ['geese', 'goose'],
+        ['lives', 'life'], ['knives', 'knife'], ['wives', 'wife'], ['leaves', 'leaf'],
+        ['selves', 'self'], ['shelves', 'shelf'], ['halves', 'half'], ['wolves', 'wolf'],
+        ['thieves', 'thief'], ['loaves', 'loaf']
+    ]);
+
+    // ============================================================
+    // CSV LOADING AND PARSING
+    // ============================================================
+
+    async function loadDefaultCSV() {
+        try {
+            document.getElementById('file-status').innerHTML = '<span style="color: #6366f1;">⏳ Loading default Oxford 5000 + Cambridge C2 word list...</span>';
+            const response = await fetch(DEFAULT_CSV_URL);
+            if (!response.ok) throw new Error('Failed to fetch CSV');
+            const text = await response.text();
+            parseCSV(text);
+            document.getElementById('file-text').innerHTML = `<strong>${DEFAULT_CSV_NAME}</strong> (pre-loaded)`;
+            document.getElementById('file-hint').textContent = 'Click here to upload a different CSV file';
+            document.getElementById('file-label').style.borderColor = 'var(--primary)';
+            document.getElementById('file-label').style.backgroundColor = '#eef2ff';
+        } catch (error) {
+            console.error('Error loading default CSV:', error);
+            document.getElementById('file-status').innerHTML = '<span style="color: #dc2626;">⚠️ Failed to load default file. Please upload a CSV manually.</span>';
+        }
+    }
+
+    loadDefaultCSV();
+
+    document.getElementById('csvFile').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        document.getElementById('file-text').innerHTML = `<strong>${file.name}</strong> selected`;
+        document.getElementById('file-label').style.borderColor = 'var(--primary)';
+        document.getElementById('file-label').style.backgroundColor = '#eef2ff';
+        const reader = new FileReader();
+        reader.onload = function(e) { parseCSV(e.target.result); };
+        reader.readAsText(file);
+    });
+
+    function parseCSV(csvText) {
+        dictionary.clear();
+        dictionaryWithPos.clear();
+        const levelRank = { 'A1': 1, 'A2': 2, 'B1': 3, 'B2': 4, 'C1': 5, 'C2': 6 };
+        const lines = csvText.split(/\r?\n/);
+        let count = 0;
+
+        lines.forEach(line => {
+            if (!line.trim()) return;
+            const parts = line.split(',');
+            if (parts.length < 2) return;
+            const level = parts[0].trim().toUpperCase();
+            const word = parts[1].trim();
+            const pos = parts.length > 2 ? parts[2].trim().toLowerCase() : '';
+            const cleanWord = word.toLowerCase();
+
+            if (!['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].includes(level)) return;
+
+            if (pos) {
+                let normPos = pos.startsWith('v') ? 'v' : pos.startsWith('n') ? 'n' : 
+                              pos.startsWith('adj') ? 'adj' : pos.startsWith('adv') ? 'adv' : pos;
+                dictionaryWithPos.set(`${cleanWord},${normPos}`, level);
+            }
+
+            if (!dictionary.has(cleanWord)) {
+                dictionary.set(cleanWord, { level: level, pos: pos });
+            } else {
+                const currentEntry = dictionary.get(cleanWord);
+                const currentRank = levelRank[currentEntry.level] || 99;
+                const newRank = levelRank[level] || 99;
+                if (newRank < currentRank) {
+                    dictionary.set(cleanWord, { level: level, pos: pos });
+                }
+            }
+            count++;
+        });
+
+        isFileLoaded = true;
+        document.getElementById('file-status').textContent = `✓ Successfully loaded ${count} words from database.`;
+    }
+
+    // ============================================================
+    // WORD LOOKUP (with supplementary list and spelling variants)
+    // ============================================================
+    
+    function lookupWord(word) {
+        const lower = word.toLowerCase();
+        
+        // 1. Check main dictionary
+        if (dictionary.has(lower)) {
+            return { found: true, level: dictionary.get(lower).level, source: 'dictionary' };
+        }
+        
+        // 2. Check supplementary words
+        if (SUPPLEMENTARY_WORDS.has(lower)) {
+            return { found: true, level: SUPPLEMENTARY_WORDS.get(lower), source: 'supplementary' };
+        }
+        
+        // 3. Check British/American spelling variants
+        if (SPELLING_VARIANTS.has(lower)) {
+            const americanSpelling = SPELLING_VARIANTS.get(lower);
+            if (dictionary.has(americanSpelling)) {
+                return { found: true, level: dictionary.get(americanSpelling).level, source: 'variant' };
+            }
+            if (SUPPLEMENTARY_WORDS.has(americanSpelling)) {
+                return { found: true, level: SUPPLEMENTARY_WORDS.get(americanSpelling), source: 'variant' };
+            }
+        }
+        
+        return { found: false, level: null, source: null };
+    }
+
+    // ============================================================
+    // LEMMATIZATION ENGINE
+    // ============================================================
+
+    function lemmatize(word) {
+        const lower = word.toLowerCase().replace(/['']/g, "'");
+        
+        // Direct lookup
+        const directLookup = lookupWord(lower);
+        if (directLookup.found) {
+            return { lemma: lower, found: true, level: directLookup.level };
+        }
+        
+        // Irregular forms
+        if (IRREGULAR_VERBS.has(lower)) {
+            const base = IRREGULAR_VERBS.get(lower);
+            const baseLookup = lookupWord(base);
+            if (baseLookup.found) {
+                return { lemma: base, found: true, level: baseLookup.level };
+            }
+        }
+        
+        // Contractions
+        if (CONTRACTIONS.has(lower)) {
+            const base = CONTRACTIONS.get(lower);
+            const baseLookup = lookupWord(base);
+            if (baseLookup.found) {
+                return { lemma: base, found: true, level: baseLookup.level, isContraction: true };
+            }
+            return { lemma: lower, found: true, level: 'A1', isContraction: true };
+        }
+        
+        // Morphological analysis
+        const morphResult = tryMorphologicalAnalysis(lower);
+        if (morphResult.found) {
+            return morphResult;
+        }
+        
+        return { lemma: lower, found: false, level: null };
+    }
+
+    function tryMorphologicalAnalysis(word) {
+        const tryLookup = (base) => {
+            const result = lookupWord(base);
+            if (result.found) {
+                return { lemma: base, found: true, level: result.level };
+            }
+            return null;
+        };
+        
+        // -ing forms
+        if (word.endsWith('ing') && word.length > 4) {
+            let base = word.slice(0, -3);
+            if (base.length >= 2) {
+                const lastTwo = base.slice(-2);
+                if (lastTwo[0] === lastTwo[1] && /[bcdfgklmnprstvz]/.test(lastTwo[0])) {
+                    const result = tryLookup(base.slice(0, -1));
+                    if (result) return result;
+                }
+            }
+            let result = tryLookup(base + 'e');
+            if (result) return result;
+            result = tryLookup(base);
+            if (result) return result;
+            if (base.endsWith('y')) {
+                result = tryLookup(base.slice(0, -1) + 'ie');
+                if (result) return result;
+            }
+        }
+        
+        // -ed forms
+        if (word.endsWith('ed') && word.length > 3) {
+            let base = word.slice(0, -2);
+            if (base.length >= 2) {
+                const lastTwo = base.slice(-2);
+                if (lastTwo[0] === lastTwo[1] && /[bcdfgklmnprstvz]/.test(lastTwo[0])) {
+                    const result = tryLookup(base.slice(0, -1));
+                    if (result) return result;
+                }
+            }
+            let result = tryLookup(base + 'e');
+            if (result) return result;
+            result = tryLookup(base);
+            if (result) return result;
+            if (word.endsWith('ied')) {
+                result = tryLookup(word.slice(0, -3) + 'y');
+                if (result) return result;
+            }
+        }
+        
+        // -s/-es forms
+        if (word.endsWith('s') && word.length > 2 && !word.endsWith('ss')) {
+            if (word.endsWith('ies') && word.length > 4) {
+                const result = tryLookup(word.slice(0, -3) + 'y');
+                if (result) return result;
+            }
+            if (word.endsWith('es') && word.length > 3) {
+                let result = tryLookup(word.slice(0, -2));
+                if (result) return result;
+            }
+            const result = tryLookup(word.slice(0, -1));
+            if (result) return result;
+        }
+        
+        // -er comparative / agent noun
+        if (word.endsWith('er') && word.length > 3) {
+            let base = word.slice(0, -2);
+            if (base.length >= 2) {
+                const lastTwo = base.slice(-2);
+                if (lastTwo[0] === lastTwo[1] && /[bcdfgklmnprstvz]/.test(lastTwo[0])) {
+                    const result = tryLookup(base.slice(0, -1));
+                    if (result) return result;
+                }
+            }
+            let result = tryLookup(base + 'e');
+            if (result) return result;
+            result = tryLookup(base);
+            if (result) return result;
+            if (word.endsWith('ier')) {
+                result = tryLookup(word.slice(0, -3) + 'y');
+                if (result) return result;
+            }
+        }
+        
+        // -est superlative
+        if (word.endsWith('est') && word.length > 4) {
+            let base = word.slice(0, -3);
+            if (base.length >= 2) {
+                const lastTwo = base.slice(-2);
+                if (lastTwo[0] === lastTwo[1] && /[bcdfgklmnprstvz]/.test(lastTwo[0])) {
+                    const result = tryLookup(base.slice(0, -1));
+                    if (result) return result;
+                }
+            }
+            let result = tryLookup(base + 'e');
+            if (result) return result;
+            result = tryLookup(base);
+            if (result) return result;
+            if (word.endsWith('iest')) {
+                result = tryLookup(word.slice(0, -4) + 'y');
+                if (result) return result;
+            }
+        }
+        
+        // -ly adverbs
+        if (word.endsWith('ly') && word.length > 3) {
+            let base = word.slice(0, -2);
+            let result = tryLookup(base);
+            if (result) return result;
+            if (word.endsWith('ily')) {
+                result = tryLookup(word.slice(0, -3) + 'y');
+                if (result) return result;
+            }
+            if (base.endsWith('l')) {
+                result = tryLookup(base + 'e');
+                if (result) return result;
+            }
+            result = tryLookup(base + 'e');
+            if (result) return result;
+        }
+        
+        // -ness nouns
+        if (word.endsWith('ness') && word.length > 5) {
+            let base = word.slice(0, -4);
+            let result = tryLookup(base);
+            if (result) return result;
+            if (word.endsWith('iness')) {
+                result = tryLookup(word.slice(0, -5) + 'y');
+                if (result) return result;
+            }
+        }
+        
+        // -ment nouns
+        if (word.endsWith('ment') && word.length > 5) {
+            let base = word.slice(0, -4);
+            let result = tryLookup(base);
+            if (result) return result;
+            result = tryLookup(base + 'e');
+            if (result) return result;
+        }
+        
+        // -tion/-sion nouns
+        if ((word.endsWith('tion') || word.endsWith('sion')) && word.length > 5) {
+            let base = word.slice(0, -4);
+            let result = tryLookup(base);
+            if (result) return result;
+            result = tryLookup(base + 'e');
+            if (result) return result;
+            if (word.endsWith('ation') && word.length > 6) {
+                result = tryLookup(word.slice(0, -5) + 'e');
+                if (result) return result;
+                result = tryLookup(word.slice(0, -5));
+                if (result) return result;
+            }
+        }
+        
+        // -able/-ible adjectives
+        if ((word.endsWith('able') || word.endsWith('ible')) && word.length > 5) {
+            let base = word.slice(0, -4);
+            let result = tryLookup(base);
+            if (result) return result;
+            result = tryLookup(base + 'e');
+            if (result) return result;
+        }
+        
+        // -ful adjectives
+        if (word.endsWith('ful') && word.length > 4) {
+            let base = word.slice(0, -3);
+            let result = tryLookup(base);
+            if (result) return result;
+            result = tryLookup(base + 'y');
+            if (result) return result;
+        }
+        
+        // -less adjectives
+        if (word.endsWith('less') && word.length > 5) {
+            let base = word.slice(0, -4);
+            let result = tryLookup(base);
+            if (result) return result;
+        }
+        
+        // -ous adjectives
+        if (word.endsWith('ous') && word.length > 4) {
+            let base = word.slice(0, -3);
+            let result = tryLookup(base + 'e');
+            if (result) return result;
+            result = tryLookup(base);
+            if (result) return result;
+        }
+        
+        // -ive adjectives
+        if (word.endsWith('ive') && word.length > 4) {
+            let base = word.slice(0, -3);
+            let result = tryLookup(base + 'e');
+            if (result) return result;
+            result = tryLookup(base);
+            if (result) return result;
+        }
+        
+        // -ic adjectives (artistic -> art)
+        if (word.endsWith('ic') && word.length > 3) {
+            let base = word.slice(0, -2);
+            let result = tryLookup(base);
+            if (result) return result;
+            // Also try without 'ist' for words like artistic
+            if (word.endsWith('istic')) {
+                result = tryLookup(word.slice(0, -5));
+                if (result) return result;
+            }
+        }
+        
+        // -al adjectives
+        if (word.endsWith('al') && word.length > 3) {
+            let base = word.slice(0, -2);
+            let result = tryLookup(base);
+            if (result) return result;
+            result = tryLookup(base + 'e');
+            if (result) return result;
+        }
+        
+        return { lemma: word, found: false, level: null };
+    }
+
+    // ============================================================
+    // OFF-LIST WORD CLASSIFICATION
+    // ============================================================
+
+    function classifyOffListWord(word, originalWord, isAtSentenceStart, context = {}) {
+        const lower = word.toLowerCase();
+        const len = lower.length;
+        
+        const result = {
+            type: 'unknown',
+            difficultyWeight: 0,
+            reason: '',
+            isLiterary: false,
+            estimatedLevel: null
+        };
+        
+        // Email addresses and URLs
+        if (lower.includes('@') || lower.includes('.com') || lower.includes('.org') ||
+            lower.includes('.edu') || lower.includes('.hk') || lower.includes('www') ||
+            /^[a-z]+\.[a-z]+$/i.test(lower)) {
+            result.type = 'email_url';
+            result.difficultyWeight = 0;
+            result.reason = 'email/URL component';
+            return result;
+        }
+        
+        // Numbers
+        if (/^\d+$/.test(word) || /^\d+[\.,]\d+$/.test(word) || /^\d+(st|nd|rd|th)$/i.test(word)) {
+            result.type = 'number';
+            result.difficultyWeight = 0;
+            result.reason = 'numeric';
+            return result;
+        }
+        
+        // Very short words (likely function words or abbreviations)
+        if (len <= 2) {
+            result.type = 'abbreviation';
+            result.difficultyWeight = 0;
+            result.reason = 'very short';
+            return result;
+        }
+        
+        // Known proper nouns
+        if (PROPER_NOUNS.has(lower)) {
+            result.type = 'proper_noun';
+            result.difficultyWeight = 0;
+            result.reason = 'known name/place';
+            return result;
+        }
+        
+        // Capitalized word NOT at sentence start (likely proper noun)
+        if (/^[A-Z][a-z]+$/.test(originalWord) && !isAtSentenceStart) {
+            result.type = 'proper_noun';
+            result.difficultyWeight = 0;
+            result.reason = 'mid-sentence capitalized (likely name)';
+            return result;
+        }
+        
+        // All caps (acronym)
+        if (/^[A-Z]{2,}$/.test(originalWord)) {
+            result.type = 'acronym';
+            result.difficultyWeight = 0;
+            result.reason = 'acronym';
+            return result;
+        }
+        
+        // Title patterns
+        if (/^(mr|mrs|ms|dr|prof|st|mt)$/i.test(lower)) {
+            result.type = 'abbreviation';
+            result.difficultyWeight = 0;
+            result.reason = 'title abbreviation';
+            return result;
+        }
+        
+        // Literary vocabulary - check before general classification
+        if (LITERARY_VOCABULARY.has(lower)) {
+            result.type = 'literary';
+            result.difficultyWeight = 2.0;
+            result.reason = 'literary/evocative vocabulary';
+            result.isLiterary = true;
+            result.estimatedLevel = 'C1';
+            return result;
+        }
+        
+        // Hyphenated compounds
+        if (word.includes('-')) {
+            const parts = word.split('-').filter(p => p.length > 0);
+            let knownCount = 0;
+            let maxLevel = 'A1';
+            const levelRank = { 'A1': 1, 'A2': 2, 'B1': 3, 'B2': 4, 'C1': 5, 'C2': 6 };
+
+            for (const part of parts) {
+                const lookup = lookupWord(part.toLowerCase());
+                if (lookup.found) {
+                    knownCount++;
+                    if (levelRank[lookup.level] > levelRank[maxLevel]) {
+                        maxLevel = lookup.level;
+                    }
+                }
+            }
+            
+            if (knownCount === parts.length) {
+                result.type = 'compound';
+                result.difficultyWeight = 0.3;
+                result.reason = 'compound of known words';
+                result.estimatedLevel = maxLevel;
+                return result;
+            } else if (knownCount > 0) {
+                result.type = 'compound_partial';
+                result.difficultyWeight = 0.5;
+                result.reason = 'compound (partially known)';
+                return result;
+            }
+        }
+        
+        // Simple, common-looking words that are probably easy
+        // Short words with common patterns are likely easy even if not in dictionary
+        if (len <= 5) {
+            result.type = 'simple_unknown';
+            result.difficultyWeight = 0.2;
+            result.reason = 'short word';
+            result.estimatedLevel = 'A2';
+            return result;
+        }
+        
+        if (len <= 7) {
+            result.type = 'moderate_unknown';
+            result.difficultyWeight = 0.4;
+            result.reason = 'medium-length word';
+            result.estimatedLevel = 'B1';
+            return result;
+        }
+        
+        // Check for advanced suffixes suggesting higher difficulty
+        const advancedSuffixes = ['ization', 'isation', 'ification', 'ology', 'ological', 'istically'];
+        for (const suffix of advancedSuffixes) {
+            if (lower.endsWith(suffix)) {
+                result.type = 'advanced';
+                result.difficultyWeight = 1.5;
+                result.reason = `formal suffix (-${suffix})`;
+                result.estimatedLevel = 'C1';
+                return result;
+            }
+        }
+        
+        const moderateSuffixes = ['ment', 'tion', 'sion', 'ance', 'ence', 'ity', 'ness', 'ious', 'eous'];
+        for (const suffix of moderateSuffixes) {
+            if (lower.endsWith(suffix) && len > suffix.length + 3) {
+                result.type = 'moderate_advanced';
+                result.difficultyWeight = 0.7;
+                result.reason = `academic suffix (-${suffix})`;
+                result.estimatedLevel = 'B2';
+                return result;
+            }
+        }
+        
+        // Length-based classification for remaining words
+        if (len >= 12) {
+            result.type = 'advanced';
+            result.difficultyWeight = 1.2;
+            result.reason = 'very long word';
+            result.estimatedLevel = 'C1';
+        } else if (len >= 10) {
+            result.type = 'advanced';
+            result.difficultyWeight = 0.9;
+            result.reason = 'long word';
+            result.estimatedLevel = 'B2';
+        } else if (len >= 8) {
+            result.type = 'moderate';
+            result.difficultyWeight = 0.6;
+            result.reason = 'moderately long';
+            result.estimatedLevel = 'B1';
+        } else {
+            result.type = 'simple';
+            result.difficultyWeight = 0.3;
+            result.reason = 'standard unknown';
+            result.estimatedLevel = 'B1';
+        }
+        
+        return result;
+    }
+
+    // ============================================================
+    // TEXT STYLE ANALYSIS
+    // ============================================================
+
+    function analyzeTextStyle(text) {
+        const style = {
+            idiomCount: 0,
+            idiomWeight: 0,
+            idiomDetails: [],
+            figurativeCount: 0,
+            figurativeWeight: 0,
+            syntaxComplexity: 0,
+            dialoguePresent: false,
+            narrativeMarkers: 0,
+            isLiterary: false,
+            isAcademic: false,
+            isSimple: false
+        };
+        
+        // Check for idioms
+        for (const idiom of IDIOM_PATTERNS) {
+            const matches = text.match(idiom.pattern);
+            if (matches) {
+                style.idiomCount += matches.length;
+                style.idiomWeight += idiom.weight * matches.length;
+                style.idiomDetails.push({
+                    pattern: idiom.pattern.source,
+                    level: idiom.level,
+                    count: matches.length
+                });
+            }
+        }
+        
+        // Check for figurative language
+        for (const fig of FIGURATIVE_PATTERNS) {
+            const matches = text.match(fig.pattern);
+            if (matches) {
+                style.figurativeCount += matches.length;
+                style.figurativeWeight += fig.weight * matches.length;
+            }
+        }
+        
+        // Check for complex syntax
+        for (const syntax of COMPLEX_SYNTAX_PATTERNS) {
+            const matches = text.match(syntax.pattern);
+            if (matches) {
+                style.syntaxComplexity += syntax.weight * matches.length;
+            }
+        }
+        
+        // Check for dialogue
+        const dialogueMatches = text.match(/"[^"]+"/g) || [];
+        const singleQuoteDialogue = text.match(/'[^']+'/g) || [];
+        style.dialoguePresent = dialogueMatches.length > 2 || singleQuoteDialogue.length > 2;
+        
+        // Narrative markers
+        const narrativePatterns = [
+            /\bI (remember|recall|think back|grew up|was|had|felt|knew|saw|heard)\b/gi,
+            /\bmy (mother|father|mom|dad|parents|brother|sister|family)\b/gi,
+            /\blooking back\b/gi,
+            /\bas a (child|kid|girl|boy)\b/gi,
+            /\bgrowing up\b/gi
+        ];
+        
+        for (const pattern of narrativePatterns) {
+            const matches = text.match(pattern);
+            if (matches) style.narrativeMarkers += matches.length;
+        }
+        
+        // Academic markers
+        const academicPatterns = [
+            /\baccording to\b/gi,
+            /\bthe (fact|reality|truth) (is|was) that\b/gi,
+            /\bin (fact|addition|conclusion|contrast)\b/gi,
+            /\bfor (example|instance)\b/gi,
+            /\bthis (means|suggests|indicates|shows)\b/gi,
+            /\bas a result\b/gi,
+            /\bhowever,\b/gi,
+            /\btherefore,?\b/gi
+        ];
+        
+        let academicMarkerCount = 0;
+        for (const pattern of academicPatterns) {
+            const matches = text.match(pattern);
+            if (matches) academicMarkerCount += matches.length;
+        }
+        
+        // Simple text markers (announcements, notices, instructions)
+        const simplePatterns = [
+            /\byou can\b/gi,
+            /\bplease\b/gi,
+            /\bcontact\b/gi,
+            /\bquestions?\b/gi,
+            /\bcome and\b/gi,
+            /\bnow is the time\b/gi,
+            /\blet us know\b/gi
+        ];
+        
+        let simpleMarkerCount = 0;
+        for (const pattern of simplePatterns) {
+            const matches = text.match(pattern);
+            if (matches) simpleMarkerCount += matches.length;
+        }
+        
+        const wordCount = text.split(/\s+/).length;
+        const idiomDensity = (style.idiomCount / wordCount) * 1000;
+        const figurativeDensity = (style.figurativeCount / wordCount) * 1000;
+        const narrativeDensity = (style.narrativeMarkers / wordCount) * 1000;
+        const academicDensity = (academicMarkerCount / wordCount) * 1000;
+        const simpleDensity = (simpleMarkerCount / wordCount) * 1000;
+        
+        style.isLiterary = (
+            idiomDensity > 3 || 
+            figurativeDensity > 2 || 
+            narrativeDensity > 5 ||
+            (style.dialoguePresent && narrativeDensity > 2) ||
+            style.syntaxComplexity > 5
+        );
+        
+        style.isAcademic = academicDensity > 5 && !style.isLiterary;
+        style.isSimple = simpleDensity > 20 && !style.isLiterary && !style.isAcademic;
+        
+        return style;
+    }
+
+    // ============================================================
+    // UI UTILITIES
+    // ============================================================
+
+    function showAlert(message) {
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000;';
+        modal.innerHTML = `
+            <div style="background:white;padding:24px;border-radius:12px;max-width:320px;width:90%;text-align:center;box-shadow:0 20px 25px -5px rgba(0,0,0,0.1);">
+                <p style="margin:0 0 20px;color:#374151;font-size:1rem;">${message}</p>
+                <button style="background:var(--primary);color:white;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-weight:600;" onclick="this.closest('div').parentElement.remove()">OK</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    // ============================================================
+    // MAIN ANALYSIS ENGINE
+    // ============================================================
+
+    let analysisData = {};
+
+    function analyzePassage() {
+        if (!isFileLoaded) { showAlert("Please upload the CSV file first."); return; }
+        const text = document.getElementById('inputText').value;
+        if (!text.trim()) { showAlert("Please enter some text to analyze."); return; }
+
+        const outputDiv = document.getElementById('highlighted-content');
+        outputDiv.innerHTML = '';
+        
+        const counts = { A1: 0, A2: 0, B1: 0, B2: 0, C1: 0, C2: 0, Off: 0, Total: 0 };
+        const levelWeights = { A1: 1, A2: 2, B1: 3, B2: 4, C1: 5, C2: 6 };
+        
+        let weightedSum = 0;
+        let totalWordLength = 0;
+        let longWords = 0;
+        const uniqueWords = new Set();
+        const uniqueLemmas = new Set();
+        const offListAnalysis = [];
+        const advancedWordsFound = [];
+        let literaryOffListCount = 0;
+        
+        const textStyle = analyzeTextStyle(text);
+        
+        const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+        const sentenceCount = Math.max(sentences.length, 1);
+        
+        let complexSentences = 0;
+        sentences.forEach(sent => {
+            const words = sent.split(/\s+/).filter(w => w.length > 0);
+            const hasSubordination = /\b(because|although|while|when|if|unless|since|whereas)\b/i.test(sent);
+            const hasRelativeClause = /\b(who|which|that|whom|whose|where)\b/i.test(sent);
+            const hasDashes = sent.includes('–') || sent.includes('—');
+            
+            if (words.length > 20 || (hasSubordination && words.length > 12) || hasDashes) {
+                complexSentences++;
+            }
+        });
+        
+        let isAfterSentenceEnd = true;
+        const tokens = text.split(/([a-zA-Z0-9''-]+)/);
+        
+        tokens.forEach((token) => {
+            if (!/[a-zA-Z0-9]/.test(token)) {
+                outputDiv.appendChild(document.createTextNode(token));
+                if (/[.!?]/.test(token)) isAfterSentenceEnd = true;
+                return;
+            }
+
+            // Skip email/URL components entirely
+            if (token.includes('@') || /\.(com|org|edu|hk|uk|net)$/i.test(token) ||
+                token === 'www' || /^[a-z]\.[a-z]+$/i.test(token)) {
+                outputDiv.appendChild(document.createTextNode(token));
+                return;
+            }
+
+            counts.Total++;
+            const cleanToken = token.toLowerCase().replace(/['''-]/g, '');
+            totalWordLength += cleanToken.length;
+            uniqueWords.add(cleanToken);
+            if (cleanToken.length >= 8) longWords++;
+
+            const lemmaResult = lemmatize(token);
+            uniqueLemmas.add(lemmaResult.lemma);
+
+            const span = document.createElement('span');
+            span.textContent = token;
+            span.classList.add('cefr-word');
+
+            if (lemmaResult.found && lemmaResult.level) {
+                const level = lemmaResult.level.substring(0, 2).toUpperCase();
+                if (['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].includes(level)) {
+                    span.classList.add(`level-${level}`);
+                    span.setAttribute('data-info', `${lemmaResult.lemma} (${level})`);
+                    counts[level]++;
+                    weightedSum += levelWeights[level];
+
+                    if (level === 'B2' || level === 'C1' || level === 'C2') {
+                        advancedWordsFound.push({ word: token, lemma: lemmaResult.lemma, level: level });
+                    }
+                } else {
+                    span.classList.add('level-XX');
+                    counts.Off++;
+                    const classification = classifyOffListWord(cleanToken, token, isAfterSentenceEnd);
+                    classification.word = token;
+                    classification.lemma = lemmaResult.lemma;
+                    offListAnalysis.push(classification);
+                    if (classification.isLiterary) literaryOffListCount++;
+                }
+            } else {
+                span.classList.add('level-XX');
+                counts.Off++;
+                const classification = classifyOffListWord(cleanToken, token, isAfterSentenceEnd);
+                classification.word = token;
+                classification.lemma = lemmaResult.lemma;
+                offListAnalysis.push(classification);
+                if (classification.isLiterary) literaryOffListCount++;
+            }
+
+            outputDiv.appendChild(span);
+            isAfterSentenceEnd = false;
+        });
+
+        let offListDifficultySum = 0;
+        let neutralOffList = 0;
+        let advancedOffList = 0;
+        
+        offListAnalysis.forEach(item => {
+            offListDifficultySum += item.difficultyWeight;
+            if (item.difficultyWeight <= 0.3) neutralOffList++;
+            else if (item.difficultyWeight >= 1.0) advancedOffList++;
+        });
+
+        analysisData = {
+            counts: counts,
+            weightedSum: weightedSum,
+            offListDifficultySum: offListDifficultySum,
+            offListAnalysis: offListAnalysis,
+            neutralOffList: neutralOffList,
+            advancedOffList: advancedOffList,
+            advancedWordsFound: advancedWordsFound,
+            literaryOffListCount: literaryOffListCount,
+            textStyle: textStyle,
+            metrics: {
+                totalWords: counts.Total,
+                uniqueWords: uniqueWords.size,
+                uniqueLemmas: uniqueLemmas.size,
+                avgWordLength: totalWordLength / Math.max(counts.Total, 1),
+                longWordRatio: longWords / Math.max(counts.Total, 1),
+                sentenceCount: sentenceCount,
+                avgSentenceLength: counts.Total / sentenceCount,
+                lexicalDiversity: uniqueWords.size / Math.max(counts.Total, 1),
+                complexSentenceRatio: complexSentences / sentenceCount
+            }
+        };
+
+        updateStats(counts);
+        determineVerdict();
+        document.getElementById('output-area').style.display = 'block';
+        document.getElementById('output-area').scrollIntoView({behavior: 'smooth'});
+    }
+
+    function updateStats(counts) {
+        const total = counts.Total || 1;
+        const calcPercent = (val) => ((val / total) * 100).toFixed(1) + '%';
+        document.getElementById('count-total').textContent = counts.Total;
+        document.getElementById('count-a1').textContent = counts.A1;
+        document.getElementById('count-a2').textContent = counts.A2;
+        document.getElementById('count-b1').textContent = counts.B1;
+        document.getElementById('count-b2').textContent = counts.B2;
+        document.getElementById('count-c1').textContent = counts.C1;
+        document.getElementById('count-c2').textContent = counts.C2;
+        document.getElementById('count-off').textContent = counts.Off;
+        document.getElementById('percent-a1').textContent = '(' + calcPercent(counts.A1) + ')';
+        document.getElementById('percent-a2').textContent = '(' + calcPercent(counts.A2) + ')';
+        document.getElementById('percent-b1').textContent = '(' + calcPercent(counts.B1) + ')';
+        document.getElementById('percent-b2').textContent = '(' + calcPercent(counts.B2) + ')';
+        document.getElementById('percent-c1').textContent = '(' + calcPercent(counts.C1) + ')';
+        document.getElementById('percent-c2').textContent = '(' + calcPercent(counts.C2) + ')';
+        document.getElementById('percent-off').textContent = '(' + calcPercent(counts.Off) + ')';
+    }
+
+    // ============================================================
+    // CEFR LEVEL DETERMINATION
+    // ============================================================
+    
+    function determineVerdict() {
+        const { counts, weightedSum, offListDifficultySum, metrics, 
+                neutralOffList, advancedOffList, advancedWordsFound, 
+                offListAnalysis, textStyle, literaryOffListCount } = analysisData;
+        
+        if (counts.Total === 0) return;
+        
+        const total = counts.Total;
+        const onListWords = total - counts.Off;
+        
+        // Percentages
+        const pA1 = (counts.A1 / total) * 100;
+        const pA2 = (counts.A2 / total) * 100;
+        const pB1 = (counts.B1 / total) * 100;
+        const pB2 = (counts.B2 / total) * 100;
+        const pC1 = (counts.C1 / total) * 100;
+        const pC2 = (counts.C2 / total) * 100;
+        const pOff = (counts.Off / total) * 100;
+
+        const pBasic = pA1 + pA2;
+        const pB2C1 = pB2 + pC1;
+        const pC1C2 = pC1 + pC2;
+        
+        // Weighted difficulty of on-list words only
+        const avgDifficulty = onListWords > 0 ? weightedSum / onListWords : 1;
+        
+        // Calculate effective advanced vocabulary
+        // Only count off-list words that are genuinely difficult
+        const genuinelyDifficultOffList = offListAnalysis.filter(item => item.difficultyWeight >= 1.0).length;
+        
+        // More conservative calculation of effective advanced
+        const effectiveAdvanced = counts.B2 + counts.C1 + counts.C2 + (genuinelyDifficultOffList * 0.5);
+        const effectiveAdvancedPct = (effectiveAdvanced / total) * 100;
+        
+        // Sentence complexity
+        const avgSentLen = metrics.avgSentenceLength;
+        const complexSentRatio = metrics.complexSentenceRatio;
+        
+        // Word length
+        const avgWordLen = metrics.avgWordLength;
+        
+        // Determine text type
+        const textTypeIndicator = textStyle.isLiterary ? '📚 Literary' : 
+                                  textStyle.isAcademic ? '📰 Academic' : 
+                                  textStyle.isSimple ? '📋 Simple/Notice' : '📝 General';
+        
+        // ===== LEVEL DETERMINATION =====
+        
+        let level, confidence;
+        const factors = [];
+        
+        // Simple text adjustment - if it reads like a notice/announcement, lower the threshold
+        const simpleTextBonus = textStyle.isSimple ? -0.5 : 0;
+        
+        // Literary text adjustment
+        const literaryBonus = textStyle.isLiterary ? (textStyle.idiomWeight * 0.3 + literaryOffListCount * 0.5) : 0;
+        
+        // Adjusted score
+        const adjustedAdvancedPct = effectiveAdvancedPct + simpleTextBonus + literaryBonus;
+        
+        // C2: Mastery — significant C2 vocabulary presence
+        if (pC2 >= 5 ||
+            (pC2 >= 2 && adjustedAdvancedPct >= 20) ||
+            (pC2 >= 3 && pC1C2 >= 10 && textStyle.isLiterary)) {
+            level = 'C2';
+            confidence = pC2 >= 5 ? 'high' : 'medium';
+            factors.push(`${pC2.toFixed(1)}% C2 vocabulary`);
+            if (textStyle.isLiterary) factors.push('literary features');
+        }
+        // C2: Very sophisticated (previously C1+)
+        else if (adjustedAdvancedPct >= 18 ||
+            (adjustedAdvancedPct >= 12 && avgDifficulty >= 3.0 && textStyle.isLiterary)) {
+            level = 'C2';
+            confidence = adjustedAdvancedPct >= 22 ? 'high' : 'medium';
+            factors.push(`${effectiveAdvancedPct.toFixed(1)}% advanced vocabulary`);
+            if (textStyle.isLiterary) factors.push('literary features');
+        }
+        // C1: Advanced
+        else if (adjustedAdvancedPct >= 10 ||
+                 (adjustedAdvancedPct >= 7 && avgDifficulty >= 2.8)) {
+            level = 'C1';
+            confidence = adjustedAdvancedPct >= 12 ? 'high' : 'medium';
+            factors.push(`${effectiveAdvancedPct.toFixed(1)}% advanced vocabulary`);
+        }
+        // B2: Upper-intermediate
+        else if (adjustedAdvancedPct >= 5 ||
+                 (pB2C1 >= 6 && avgSentLen >= 15)) {
+            level = 'B2';
+            confidence = adjustedAdvancedPct >= 7 ? 'high' : 'medium';
+            factors.push(`${pB2C1.toFixed(1)}% B2/C1 vocabulary`);
+        }
+        // B1: Intermediate
+        else if (pB1 >= 8 || avgDifficulty >= 2.2 || pB2C1 >= 3) {
+            level = 'B1';
+            confidence = 'high';
+            factors.push(`${pB1.toFixed(1)}% B1 vocabulary`);
+        }
+        // A2: Elementary
+        else if (pBasic < 85 || pB1 >= 5) {
+            level = 'A2';
+            confidence = 'high';
+            factors.push(`${pBasic.toFixed(1)}% basic vocabulary`);
+        }
+        // A1: Beginner
+        else {
+            level = 'A1';
+            confidence = 'high';
+            factors.push(`${pBasic.toFixed(1)}% basic vocabulary`);
+        }
+
+        // Short text warning
+        if (total < 50) {
+            if (confidence === 'high') confidence = 'medium';
+            else if (confidence === 'medium') confidence = 'low';
+        }
+
+        // Simple text type can lower the level
+        if (textStyle.isSimple && (level === 'B2' || level === 'C1')) {
+            level = 'B1';
+            factors.push('simple text structure');
+        }
+        
+        // ===== OUTPUT =====
+        
+        const levelDescriptions = {
+            'C2': 'This text requires <strong>mastery-level (C2) proficiency</strong>.',
+            'C1': 'This text requires <strong>advanced (C1) proficiency</strong>.',
+            'B2': 'This text is suitable for <strong>upper-intermediate (B2)</strong> learners.',
+            'B1': 'This text is suitable for <strong>intermediate (B1)</strong> learners.',
+            'A2': 'This text is suitable for <strong>elementary (A2)</strong> learners.',
+            'A1': 'This text is suitable for <strong>beginners (A1)</strong>.'
+        };
+        
+        let explanation = levelDescriptions[level];
+        if (factors.length > 0) {
+            explanation += ` Key indicators: ${factors.join('; ')}.`;
+        }
+        
+        const textTypeNote = `
+            <br><br><em style="color:#6b7280;">Text Type:</em> 
+            <span style="color:#374151; font-weight: 600;">${textTypeIndicator}</span>
+        `;
+        
+        const metricsNote = `
+            <br><em style="color:#6b7280;">Text Metrics:</em> 
+            <span style="color:#374151;">
+            ${total} words across ${metrics.sentenceCount} sentences 
+            (avg ${avgSentLen.toFixed(1)} words/sentence) • 
+            Avg word length: ${avgWordLen.toFixed(1)} chars
+            </span>
+        `;
+        
+        const vocabNote = `
+            <br><em style="color:#6b7280;">Vocabulary:</em>
+            <span style="color:#374151;">
+            Basic (A1+A2): ${pBasic.toFixed(1)}% •
+            Intermediate (B1): ${pB1.toFixed(1)}% •
+            Advanced (B2+C1): ${pB2C1.toFixed(1)}% •
+            Mastery (C1+C2): ${pC1C2.toFixed(1)}% •
+            Weighted avg: ${avgDifficulty.toFixed(2)}/6
+            </span>
+        `;
+        
+        let lengthNote = '';
+        if (total < 50) {
+            lengthNote = `<br><br><em style="color:#d97706;">⚠️ Short text (${total} words) — results may be less reliable.</em>`;
+        }
+        
+        const confLabels = { 
+            'high': '🟢 High confidence', 
+            'medium': '🟡 Medium confidence', 
+            'low': '🟠 Low confidence' 
+        };
+        
+        const nextLevel = {
+            'A1': 'A2', 'A2': 'B1', 'B1': 'B2', 'B2': 'C1',
+            'C1': 'C2'
+        }[level] || null;
+
+        const displayLevel = level;
+
+        const recommendationText = level === 'C2'
+            ? `This passage is appropriate for <strong>C2</strong> learners and represents the highest level of language proficiency.`
+            : `This passage is appropriate for <strong>${displayLevel}</strong> learners for intensive study, or for <strong>${nextLevel}</strong> learners for extensive reading practice.`;
+
+        document.getElementById('verdict-text').innerHTML = `
+            <strong style="font-size: 1.4em; color: #1e3a8a;">Text Level: ${displayLevel}</strong>
+            <span style="margin-left: 15px; font-size: 0.85em; color: #6b7280;">${confLabels[confidence]}</span>
+            <br><br>${explanation}
+            ${textTypeNote}
+            ${metricsNote}
+            ${vocabNote}
+            ${lengthNote}
+            <br><br><em style="color:#6b7280;">Recommendation:</em>
+            <span style="color:#374151;">
+            ${recommendationText}
+            </span>
+        `;
+    }
+
+    function clearAll() {
+        document.getElementById('inputText').value = '';
+        document.getElementById('output-area').style.display = 'none';
+        document.getElementById('highlighted-content').innerHTML = '';
+        analysisData = {};
+    }
+</script>
+
+<footer class="site-footer">
+    &copy; <span id="footer-year"></span> <strong>K S Lo English</strong>. All Rights Reserved.
+</footer>
+<script>
+    document.getElementById('footer-year').textContent = new Date().getFullYear();
+</script>
+
+</body>
+</html>
+
