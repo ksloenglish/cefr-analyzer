@@ -508,14 +508,17 @@
         ['welcome', 'A1'], ['congratulations', 'A2'],
         ['breath', 'B1'], ['vote', 'B1'], ['votes', 'B1'],
         ['soar', 'B2'], ['soars', 'B2'], ['soaring', 'B2'],
-        // ★ ADDED: common food/trade vocabulary and terms for HK-themed texts
         ['auntie', 'A2'], ['aunty', 'A2'],
         ['oyster', 'B2'], ['oysters', 'B2'],
         ['squid', 'B2'],
         ['shrimp', 'B1'],
         ['fisherman', 'B1'], ['fishermen', 'B1'],
         ['landlubber', 'C1'], ['landlubbers', 'C1'],
-        ['delectable', 'C1']
+        ['delectable', 'C1'],
+        // ★ ADDED: common simple words that should not inflate difficulty
+        ['café', 'A1'], ['cafe', 'A1'], ['pizza', 'A1'], ['chocolate', 'A1'],
+        ['sightseeing', 'A2'], ['ice cream', 'A1'],
+        ['holiday', 'A1'], ['holidays', 'A1']
     ]);
 
     const SPELLING_VARIANTS = new Map([
@@ -570,12 +573,13 @@
         'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august',
         'september', 'october', 'november', 'december',
         'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
-        // ★ ADDED: common Chinese surnames and HK place-name components
         'hung', 'wong', 'lo', 'lam', 'lee', 'tang', 'ho', 'ng', 'wu', 'liu',
         'chen', 'lin', 'leung', 'chow', 'tsang', 'yip', 'kwok', 'lau', 'fau',
         'shan', 'sai', 'tai', 'aberdeen', 'kowloon', 'tsim', 'tsui', 'mongkok',
         'yau', 'tei', 'shek', 'kip', 'mei', 'tung', 'wan', 'chai', 'pok',
-        'fu', 'lam', 'tuen', 'mun', 'yuen', 'fanling', 'sheung', 'shui'
+        'fu', 'lam', 'tuen', 'mun', 'yuen', 'fanling', 'sheung', 'shui',
+        // ★ ADDED: proper nouns for the "Hi Brian" text and similar travel letters
+        'brian', 'cindy', 'rome', 'italy', 'italian', 'italians'
     ]);
 
     const LITERARY_VOCABULARY = new Set([
@@ -604,7 +608,6 @@
         { pattern: /bear(ing|s)? the burden/gi, level: 'B2', weight: 1.5 },
         { pattern: /take(s)? (your |my |his |her |their )?breath away/gi, level: 'B2', weight: 1.5 },
         { pattern: /make(s)? (your |my |his |her |their )?(imagination |dreams? )?soar/gi, level: 'B2', weight: 1.5 },
-        // ★ ADDED: additional idiom patterns
         { pattern: /follow(ed|ing|s)? suit/gi, level: 'B2', weight: 1.5 },
         { pattern: /hit (up)?on/gi, level: 'B2', weight: 1 },
         { pattern: /close(d|s|ing)? up shop/gi, level: 'B2', weight: 1.5 },
@@ -1161,7 +1164,6 @@
         renderTreemap(counts);
     }
 
-    // ★ CHANGED: determineVerdict — tightened C1 thresholds and added new guard
     function determineVerdict() {
         const { counts, weightedSum, offListDifficultySum, metrics, neutralOffList, advancedOffList, advancedWordsFound, offListAnalysis, textStyle, literaryOffListCount, wordsByLevel } = analysisData;
         if (counts.Total === 0) return;
@@ -1186,21 +1188,25 @@
 
         const c2 = (pC2>=3||(pC2>=1.5&&pAdvanced>=5)||(pC2>=1&&effectiveAdvancedPct>=5&&(sentComplexity>=3||styleComplexity>=3))||(effectiveAdvancedPct>=7&&sentComplexity>=3.5&&styleComplexity>=2.5)||(pAdvanced>=5&&uniqueAdvanced>=10&&sentComplexity>=3));
 
-        // ★ CHANGED: C1 conditions — now require stronger combined evidence
         const c1 = (
-            pAdvanced >= 4 ||                                                          // strong vocabulary signal alone
-            effectiveAdvancedPct >= 5 ||                                               // strong effective advanced signal
-            (pAdvanced >= 2.5 && sentComplexity >= 3 && styleComplexity >= 1) ||        // vocab + syntax + some style
-            (pAdvanced >= 2 && sentComplexity >= 3 && styleComplexity >= 2) ||          // moderate vocab + strong syntax + style
-            (pAdvanced >= 2 && sentComplexity >= 4) ||                                  // moderate vocab + very complex syntax
-            (pAdvanced >= 3 && uniqueAdvanced >= 5 && sentComplexity >= 2) ||           // good vocab variety + some syntax
-            (effectiveAdvancedPct >= 4 && sentComplexity >= 3 && styleComplexity >= 2) || // effective advanced + syntax + style
-            (uniqueAdvanced >= 8 && pAdvanced >= 3) ||                                 // many unique C1/C2 words at scale
-            (pAdvanced >= 2 && styleComplexity >= 3)                                    // vocab + very strong stylistic features
+            pAdvanced >= 4 ||
+            effectiveAdvancedPct >= 5 ||
+            (pAdvanced >= 2.5 && sentComplexity >= 3 && styleComplexity >= 1) ||
+            (pAdvanced >= 2 && sentComplexity >= 3 && styleComplexity >= 2) ||
+            (pAdvanced >= 2 && sentComplexity >= 4) ||
+            (pAdvanced >= 3 && uniqueAdvanced >= 5 && sentComplexity >= 2) ||
+            (effectiveAdvancedPct >= 4 && sentComplexity >= 3 && styleComplexity >= 2) ||
+            (uniqueAdvanced >= 8 && pAdvanced >= 3) ||
+            (pAdvanced >= 2 && styleComplexity >= 3)
         );
 
         const b2 = (pB2>=5||(pB2>=3&&pAdvanced>=0.5&&sentComplexity>=1.5)||(pB2>=3&&uniqueB2>=5)||pB2Plus>=6||(p95Level==='B2'&&pB2>=3)||(avgDifficulty>=2.5&&pB1Plus>=15));
-        const b1 = (pB1>=5||pB1Plus>=8||(pB1>=3&&pB2>=1)||avgDifficulty>=2.0||(p95Level==='B1'&&pB1>=3)||pBasic<82);
+
+        // ★ CHANGED: tightened B1 trigger — raised pB1Plus threshold (8→10) and
+        //   lowered pBasic threshold (82→75) so off-list proper nouns don't falsely
+        //   inflate the level for simple texts
+        const b1 = (pB1>=5||pB1Plus>=10||(pB1>=3&&pB2>=1)||avgDifficulty>=2.0||(p95Level==='B1'&&pB1>=3)||pBasic<75);
+
         const a2 = (pBasic<90||pB1>=2||avgSentLen>=8);
 
         if (c2) { level='C2'; confidence=(pC2>=3||(pAdvanced>=5&&sentComplexity>=3))?'high':'medium'; if(pC2>=1)factors.push(`${pC2.toFixed(1)}% C2 vocabulary`); if(pAdvanced>=2)factors.push(`${pAdvanced.toFixed(1)}% C1+C2 vocabulary`); if(sentComplexity>=3)factors.push('highly complex sentence structure'); if(styleComplexity>=2.5)factors.push('sophisticated stylistic features'); }
@@ -1213,7 +1219,7 @@
         // Existing guard: no C1/C2 words in list at all
         if(counts.C1===0&&counts.C2===0&&literaryOffListCount<2&&difficultOffList.length<4&&sentComplexity<3.5&&styleComplexity<2.5&&(level==='C1'||level==='C2')){level='B2';confidence='medium';factors.push('no C1/C2 vocabulary detected in word list');}
 
-        // ★ CHANGED: strengthened guard — downgrade C1 when style/syntax evidence is weak
+        // Strengthened guard — downgrade C1 when style/syntax evidence is weak
         if (level === 'C1' && styleComplexity < 1.5 && sentComplexity < 3.5) {
             if (pAdvanced < 3.5 && uniqueAdvanced < 6) {
                 level = 'B2'; confidence = 'medium';
@@ -1226,6 +1232,26 @@
         if(level==='C1'&&uniqueAdvanced<2&&literaryOffListCount<2&&difficultOffList.length<3){level='B2';confidence='medium';factors.push('insufficient unique advanced vocabulary for C1');}
         if(level==='C2'&&uniqueC2<2&&!(sentComplexity>=4&&styleComplexity>=3&&effectiveAdvancedPct>=5)){level='C1';confidence='medium';factors.push('insufficient evidence for C2, downgraded to C1');}
         if(textStyle.isSimple&&sentComplexity<2&&(level==='B2'||level==='C1')){const lo=['A1','A2','B1','B2','C1','C2'];level=lo[Math.max(lo.indexOf(level)-1,0)];factors.push('simple text structure');if(confidence==='high')confidence='medium';}
+
+        // ★ NEW: Guard — downgrade B1 to A2 for simple texts with marginal B1 evidence.
+        //   A text should only be rated B1 if it has EITHER strong B1 vocabulary
+        //   (≥10% B1 or ≥12 unique B1 types) OR moderate B1 vocabulary (≥6%) combined
+        //   with notable sentence complexity (≥2.0) or avg difficulty (≥1.8).
+        //   If neither condition holds and the on-list vocabulary is predominantly
+        //   basic, the text is more accurately classified as A2.
+        if (level === 'B1' && pB2Plus < 2.5) {
+            const onListBasicPct = onListWords > 0 ? ((counts.A1 + counts.A2) / onListWords) * 100 : 100;
+            const uniqueB1Count = wordsByLevel.B1 ? wordsByLevel.B1.size : 0;
+            const strongB1Vocab = pB1 >= 10 || uniqueB1Count >= 12;
+            const moderateB1WithComplexity = pB1 >= 6 && (sentComplexity >= 2.0 || avgDifficulty >= 1.8);
+            if (!strongB1Vocab && !moderateB1WithComplexity && onListBasicPct >= 80) {
+                level = 'A2'; confidence = 'medium';
+                factors.length = 0;
+                factors.push(`${pBasic.toFixed(1)}% basic (A1+A2) vocabulary`);
+                factors.push('some B1 vocabulary present but insufficient combined complexity for B1');
+            }
+        }
+
         if(total<50){if(confidence==='high')confidence='medium';else confidence='low';}
         if(total<30)confidence='low';
 
