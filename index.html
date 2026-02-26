@@ -905,12 +905,16 @@
                 const result = tryLookup(word.slice(0, -3) + 'y');
                 if (result) return result;
             }
+            // Try removing just -s FIRST (handles hope→hopes, care→cares,
+            // note→notes, tape→tapes, rate→rates, fire→fires, etc.)
+            const resultS = tryLookup(word.slice(0, -1));
+            if (resultS) return resultS;
+            // Then try removing -es (handles box→boxes, go→goes,
+            // watch→watches, bus→buses, potato→potatoes, etc.)
             if (word.endsWith('es') && word.length > 3) {
                 let result = tryLookup(word.slice(0, -2));
                 if (result) return result;
             }
-            const result = tryLookup(word.slice(0, -1));
-            if (result) return result;
         }
         
         // -er comparative / agent noun
