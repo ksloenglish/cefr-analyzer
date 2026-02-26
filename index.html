@@ -140,7 +140,6 @@
         .level-C2 { background-color: var(--c2-color); color: var(--c2-text); border-bottom: 2px solid #a855f7; }
         .level-XX { color: #4b5563; }
 
-        /* ============ TREEMAP STYLES ============ */
         .treemap-section { margin-bottom: 25px; }
         .treemap-header {
             display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px;
@@ -206,7 +205,6 @@
         .treemap-cell.size-xxs .treemap-cell-count   { font-size: 0.72rem; }
         .treemap-cell.size-xxs .treemap-cell-percent { display: none; }
         .treemap-cell.size-xxs { padding: 2px 3px; gap: 1px; }
-        /* hide count too when truly tiny */
         .treemap-cell.size-dot .treemap-cell-level   { font-size: 0.5rem; }
         .treemap-cell.size-dot .treemap-cell-count    { display: none; }
         .treemap-cell.size-dot .treemap-cell-percent  { display: none; }
@@ -220,7 +218,6 @@
             opacity: 0; transition: opacity 0.15s ease;
         }
         .treemap-tooltip.visible { opacity: 1; }
-        /* ============ END TREEMAP ============ */
 
         .verdict-box {
             background: linear-gradient(to right, #eff6ff, #ffffff);
@@ -510,7 +507,15 @@
         ['please', 'A1'], ['thanks', 'A1'], ['sorry', 'A1'], ['excuse', 'A1'],
         ['welcome', 'A1'], ['congratulations', 'A2'],
         ['breath', 'B1'], ['vote', 'B1'], ['votes', 'B1'],
-        ['soar', 'B2'], ['soars', 'B2'], ['soaring', 'B2']
+        ['soar', 'B2'], ['soars', 'B2'], ['soaring', 'B2'],
+        // ★ ADDED: common food/trade vocabulary and terms for HK-themed texts
+        ['auntie', 'A2'], ['aunty', 'A2'],
+        ['oyster', 'B2'], ['oysters', 'B2'],
+        ['squid', 'B2'],
+        ['shrimp', 'B1'],
+        ['fisherman', 'B1'], ['fishermen', 'B1'],
+        ['landlubber', 'C1'], ['landlubbers', 'C1'],
+        ['delectable', 'C1']
     ]);
 
     const SPELLING_VARIANTS = new Map([
@@ -564,7 +569,13 @@
         'amazon', 'apple', 'microsoft', 'netflix', 'spotify', 'instagram', 'twitter',
         'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august',
         'september', 'october', 'november', 'december',
-        'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'
+        'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
+        // ★ ADDED: common Chinese surnames and HK place-name components
+        'hung', 'wong', 'lo', 'lam', 'lee', 'tang', 'ho', 'ng', 'wu', 'liu',
+        'chen', 'lin', 'leung', 'chow', 'tsang', 'yip', 'kwok', 'lau', 'fau',
+        'shan', 'sai', 'tai', 'aberdeen', 'kowloon', 'tsim', 'tsui', 'mongkok',
+        'yau', 'tei', 'shek', 'kip', 'mei', 'tung', 'wan', 'chai', 'pok',
+        'fu', 'lam', 'tuen', 'mun', 'yuen', 'fanling', 'sheung', 'shui'
     ]);
 
     const LITERARY_VOCABULARY = new Set([
@@ -592,7 +603,13 @@
         { pattern: /think twice/gi, level: 'B2', weight: 1 },
         { pattern: /bear(ing|s)? the burden/gi, level: 'B2', weight: 1.5 },
         { pattern: /take(s)? (your |my |his |her |their )?breath away/gi, level: 'B2', weight: 1.5 },
-        { pattern: /make(s)? (your |my |his |her |their )?(imagination |dreams? )?soar/gi, level: 'B2', weight: 1.5 }
+        { pattern: /make(s)? (your |my |his |her |their )?(imagination |dreams? )?soar/gi, level: 'B2', weight: 1.5 },
+        // ★ ADDED: additional idiom patterns
+        { pattern: /follow(ed|ing|s)? suit/gi, level: 'B2', weight: 1.5 },
+        { pattern: /hit (up)?on/gi, level: 'B2', weight: 1 },
+        { pattern: /close(d|s|ing)? up shop/gi, level: 'B2', weight: 1.5 },
+        { pattern: /make(s|d|ing)? a living/gi, level: 'B1', weight: 0.5 },
+        { pattern: /give(s|n)? (it |this |that )?up/gi, level: 'B1', weight: 0.5 }
     ];
 
     const FIGURATIVE_PATTERNS = [
@@ -933,10 +950,6 @@
         document.body.appendChild(modal);
     }
 
-    // ============================================================
-    // SQUARIFIED TREEMAP LAYOUT ENGINE
-    // ============================================================
-
     function treemapLayout(data, rect) {
         const items = data.filter(d => d.value > 0);
         if (items.length === 0) return [];
@@ -982,10 +995,6 @@
         return worst;
     }
 
-    // ============================================================
-    // TREEMAP RENDERING — CEFR left, Off List right
-    // ============================================================
-
     let lastTreemapCounts = null;
 
     function renderTreemap(counts) {
@@ -1015,7 +1024,6 @@
         let allCells = [];
 
         if (cefrTotal > 0 && offItem.value > 0) {
-            // CEFR levels on the left, Off List on the right
             const cefrWidth = Math.round((cefrTotal / grandTotal) * cW);
             const offWidth = cW - cefrWidth;
             allCells = treemapLayout(cefrItems, { x: 0, y: 0, w: cefrWidth, h: cH });
@@ -1076,10 +1084,6 @@
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(() => { if (lastTreemapCounts) renderTreemap(lastTreemapCounts); }, 200);
     });
-
-    // ============================================================
-    // MAIN ANALYSIS ENGINE
-    // ============================================================
 
     let analysisData = {};
 
@@ -1157,6 +1161,7 @@
         renderTreemap(counts);
     }
 
+    // ★ CHANGED: determineVerdict — tightened C1 thresholds and added new guard
     function determineVerdict() {
         const { counts, weightedSum, offListDifficultySum, metrics, neutralOffList, advancedOffList, advancedWordsFound, offListAnalysis, textStyle, literaryOffListCount, wordsByLevel } = analysisData;
         if (counts.Total === 0) return;
@@ -1178,18 +1183,44 @@
         if (avgWordLen >= 5.5) styleComplexity += 0.5; if (metrics.lexicalDiversity >= 0.65) styleComplexity += 0.5;
         const textTypeIndicator = textStyle.isLiterary ? '📚 Literary' : textStyle.isAcademic ? '📰 Academic' : textStyle.isSimple ? '📋 Simple/Notice' : '📝 General';
         let level, confidence; const factors = [];
+
         const c2 = (pC2>=3||(pC2>=1.5&&pAdvanced>=5)||(pC2>=1&&effectiveAdvancedPct>=5&&(sentComplexity>=3||styleComplexity>=3))||(effectiveAdvancedPct>=7&&sentComplexity>=3.5&&styleComplexity>=2.5)||(pAdvanced>=5&&uniqueAdvanced>=10&&sentComplexity>=3));
-        const c1 = (pAdvanced>=3||effectiveAdvancedPct>=3.5||(pAdvanced>=1.5&&sentComplexity>=2.5)||(pAdvanced>=1.5&&styleComplexity>=2.5)||(uniqueAdvanced>=5&&pAdvanced>=1)||(pAdvanced>=2&&uniqueAdvanced>=3&&sentComplexity>=2)||(pB2>=5&&pAdvanced>=1&&sentComplexity>=2&&uniqueAdvanced>=3)||(effectiveAdvancedPct>=2.5&&sentComplexity>=2.5&&styleComplexity>=2));
+
+        // ★ CHANGED: C1 conditions — now require stronger combined evidence
+        const c1 = (
+            pAdvanced >= 4 ||                                                          // strong vocabulary signal alone
+            effectiveAdvancedPct >= 5 ||                                               // strong effective advanced signal
+            (pAdvanced >= 2.5 && sentComplexity >= 3 && styleComplexity >= 1) ||        // vocab + syntax + some style
+            (pAdvanced >= 2 && sentComplexity >= 3 && styleComplexity >= 2) ||          // moderate vocab + strong syntax + style
+            (pAdvanced >= 2 && sentComplexity >= 4) ||                                  // moderate vocab + very complex syntax
+            (pAdvanced >= 3 && uniqueAdvanced >= 5 && sentComplexity >= 2) ||           // good vocab variety + some syntax
+            (effectiveAdvancedPct >= 4 && sentComplexity >= 3 && styleComplexity >= 2) || // effective advanced + syntax + style
+            (uniqueAdvanced >= 8 && pAdvanced >= 3) ||                                 // many unique C1/C2 words at scale
+            (pAdvanced >= 2 && styleComplexity >= 3)                                    // vocab + very strong stylistic features
+        );
+
         const b2 = (pB2>=5||(pB2>=3&&pAdvanced>=0.5&&sentComplexity>=1.5)||(pB2>=3&&uniqueB2>=5)||pB2Plus>=6||(p95Level==='B2'&&pB2>=3)||(avgDifficulty>=2.5&&pB1Plus>=15));
         const b1 = (pB1>=5||pB1Plus>=8||(pB1>=3&&pB2>=1)||avgDifficulty>=2.0||(p95Level==='B1'&&pB1>=3)||pBasic<82);
         const a2 = (pBasic<90||pB1>=2||avgSentLen>=8);
+
         if (c2) { level='C2'; confidence=(pC2>=3||(pAdvanced>=5&&sentComplexity>=3))?'high':'medium'; if(pC2>=1)factors.push(`${pC2.toFixed(1)}% C2 vocabulary`); if(pAdvanced>=2)factors.push(`${pAdvanced.toFixed(1)}% C1+C2 vocabulary`); if(sentComplexity>=3)factors.push('highly complex sentence structure'); if(styleComplexity>=2.5)factors.push('sophisticated stylistic features'); }
-        else if (c1) { level='C1'; confidence=(pAdvanced>=3||(effectiveAdvancedPct>=3&&sentComplexity>=2.5))?'high':'medium'; factors.push(`${pAdvanced.toFixed(1)}% C1+C2 vocabulary`); if(uniqueAdvanced>=3)factors.push(`${uniqueAdvanced} unique C1/C2 word types`); if(sentComplexity>=2.5)factors.push('complex sentence structure'); if(styleComplexity>=2)factors.push('advanced stylistic features'); }
+        else if (c1) { level='C1'; confidence=(pAdvanced>=4||(effectiveAdvancedPct>=4&&sentComplexity>=3))?'high':'medium'; factors.push(`${pAdvanced.toFixed(1)}% C1+C2 vocabulary`); if(uniqueAdvanced>=3)factors.push(`${uniqueAdvanced} unique C1/C2 word types`); if(sentComplexity>=2.5)factors.push('complex sentence structure'); if(styleComplexity>=2)factors.push('advanced stylistic features'); }
         else if (b2) { level='B2'; confidence=(pB2>=5||pB2Plus>=7)?'high':'medium'; factors.push(`${pB2.toFixed(1)}% B2 vocabulary`); if(pAdvanced>=0.5)factors.push(`${pAdvanced.toFixed(1)}% C1+C2 vocabulary`); if(sentComplexity>=1.5)factors.push('moderate sentence complexity'); }
         else if (b1) { level='B1'; confidence=pB1>=8?'high':'medium'; factors.push(`${pB1.toFixed(1)}% B1 vocabulary`); if(pB2>=1)factors.push('some B2 vocabulary present'); }
         else if (a2) { level='A2'; confidence='high'; factors.push(`${pBasic.toFixed(1)}% basic (A1+A2) vocabulary`); }
         else { level='A1'; confidence='high'; factors.push(`${pBasic.toFixed(1)}% basic (A1+A2) vocabulary`); }
+
+        // Existing guard: no C1/C2 words in list at all
         if(counts.C1===0&&counts.C2===0&&literaryOffListCount<2&&difficultOffList.length<4&&sentComplexity<3.5&&styleComplexity<2.5&&(level==='C1'||level==='C2')){level='B2';confidence='medium';factors.push('no C1/C2 vocabulary detected in word list');}
+
+        // ★ CHANGED: strengthened guard — downgrade C1 when style/syntax evidence is weak
+        if (level === 'C1' && styleComplexity < 1.5 && sentComplexity < 3.5) {
+            if (pAdvanced < 3.5 && uniqueAdvanced < 6) {
+                level = 'B2'; confidence = 'medium';
+                factors.push('insufficient combined evidence for C1: low style/syntax complexity relative to vocabulary');
+            }
+        }
+
         if(pB2Plus<2&&effectiveAdvancedPct<2&&uniqueB2+uniqueAdvanced<3&&(level==='B2'||level==='C1'||level==='C2')){level='B1';confidence='medium';factors.push('minimal upper-level vocabulary');}
         if(pBasic>=88&&pB2Plus<3&&sentComplexity<1.5&&(level==='B2'||level==='C1'||level==='C2')){level=pB1>=5?'B1':'A2';confidence='medium';factors.push('vocabulary is overwhelmingly basic');}
         if(level==='C1'&&uniqueAdvanced<2&&literaryOffListCount<2&&difficultOffList.length<3){level='B2';confidence='medium';factors.push('insufficient unique advanced vocabulary for C1');}
@@ -1197,6 +1228,7 @@
         if(textStyle.isSimple&&sentComplexity<2&&(level==='B2'||level==='C1')){const lo=['A1','A2','B1','B2','C1','C2'];level=lo[Math.max(lo.indexOf(level)-1,0)];factors.push('simple text structure');if(confidence==='high')confidence='medium';}
         if(total<50){if(confidence==='high')confidence='medium';else confidence='low';}
         if(total<30)confidence='low';
+
         const ld={'C2':'This text requires <strong>mastery-level (C2) proficiency</strong>.','C1':'This text requires <strong>advanced (C1) proficiency</strong>.','B2':'This text is suitable for <strong>upper-intermediate (B2)</strong> learners.','B1':'This text is suitable for <strong>intermediate (B1)</strong> learners.','A2':'This text is suitable for <strong>elementary (A2)</strong> learners.','A1':'This text is suitable for <strong>beginners (A1)</strong>.'};
         let explanation = ld[level]; if(factors.length>0) explanation += ` Key indicators: ${[...new Set(factors)].join('; ')}.`;
         const cl={'high':'🟢 High confidence','medium':'🟡 Medium confidence','low':'🟠 Low confidence'};
