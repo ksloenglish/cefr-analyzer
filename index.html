@@ -811,8 +811,8 @@
         }
         if (word.endsWith('s') && word.length > 2 && !word.endsWith('ss')) {
             if (word.endsWith('ies') && word.length > 4) { let r = tryLookup(word.slice(0, -3) + 'y'); if (r) return r; }
-            if (word.endsWith('es') && word.length > 3) { let r = tryLookup(word.slice(0, -2)); if (r) return r; }
             let r = tryLookup(word.slice(0, -1)); if (r) return r;
+            if (word.endsWith('es') && word.length > 3) { r = tryLookup(word.slice(0, -2)); if (r) return r; }
         }
         if (word.endsWith('er') && word.length > 3) {
             let base = word.slice(0, -2);
