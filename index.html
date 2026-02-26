@@ -1427,14 +1427,28 @@
         const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
         const sentenceCount = Math.max(sentences.length, 1);
         
+        // ---- Improved sentence complexity calculation ----
         let complexSentences = 0;
         sentences.forEach(sent => {
             const words = sent.split(/\s+/).filter(w => w.length > 0);
-            const hasSubordination = /\b(because|although|while|when|if|unless|since|whereas)\b/i.test(sent);
-            const hasRelativeClause = /\b(who|which|that|whom|whose|where)\b/i.test(sent);
+            const hasSubordination = /\b(because|although|while|when|if|unless|since|whereas|despite|unless|whether|even though|in order to|so that)\b/i.test(sent);
+            const hasRelativeClause = /\b(who|which|whom|whose)\b/i.test(sent);
             const hasDashes = sent.includes('–') || sent.includes('—');
-            
-            if (words.length > 20 || (hasSubordination && words.length > 12) || hasDashes) {
+            const hasParticipial = /(?:^|[,;])\s*\w+ing\b/i.test(sent.trim());
+            const hasPassive = /\b(was|were|been|being|is|are)\s+\w+ed\b/i.test(sent);
+            const hasMultipleConjunctions = (sent.match(/\b(and|but|or|yet|so|because|although|while|when|if|unless|since|whereas|whether)\b/gi) || []).length >= 3;
+
+            let complexityIndicators = 0;
+            if (words.length > 20) complexityIndicators += 2;
+            else if (words.length > 14) complexityIndicators += 1;
+            if (hasSubordination) complexityIndicators += 1;
+            if (hasRelativeClause) complexityIndicators += 1;
+            if (hasDashes) complexityIndicators += 1;
+            if (hasParticipial) complexityIndicators += 1;
+            if (hasPassive) complexityIndicators += 0.5;
+            if (hasMultipleConjunctions) complexityIndicators += 1;
+
+            if (complexityIndicators >= 2) {
                 complexSentences++;
             }
         });
@@ -1574,20 +1588,48 @@
     }
 
     // ============================================================
-    // CEFR LEVEL DETERMINATION
+    // CEFR LEVEL DETERMINATION — IMPROVED MULTI-FACTOR ANALYSIS
     // ============================================================
-    
+    //
+    // Key design changes from the original logic:
+    //
+    // 1. B2 vocabulary is NO LONGER lumped with C1/C2 as "advanced."
+    //    B2 words are expected in B2 texts; only C1+C2 words (pAdvanced)
+    //    are treated as the primary discriminator for the C1/C2 boundary.
+    //
+    // 2. An "effective advanced %" compensates for advanced words that
+    //    are missing from the word list by adding literary off-list and
+    //    half-weighted difficult off-list words.
+    //
+    // 3. A 95th-percentile coverage level is calculated: what CEFR level
+    //    must a reader know to understand 95% of the on-list words?
+    //
+    // 4. Sentence complexity and style complexity are scored as separate
+    //    dimensions (0–5 each) and used as supporting evidence that can
+    //    push a borderline text up or confirm a level.
+    //
+    // 5. Unique word-type counts (breadth) matter: five different C1
+    //    words are more diagnostic than one C1 word repeated five times.
+    //
+    // 6. Sanity-check overrides prevent impossible ratings (e.g. C1
+    //    with zero C1/C2 vocabulary and no compensating complexity).
+    //
+    // ============================================================
+
     function determineVerdict() {
-        const { counts, weightedSum, offListDifficultySum, metrics, 
-                neutralOffList, advancedOffList, advancedWordsFound, 
-                offListAnalysis, textStyle, literaryOffListCount } = analysisData;
-        
+        const { counts, weightedSum, offListDifficultySum, metrics,
+                neutralOffList, advancedOffList, advancedWordsFound,
+                offListAnalysis, textStyle, literaryOffListCount, wordsByLevel } = analysisData;
+
         if (counts.Total === 0) return;
-        
+
         const total = counts.Total;
         const onListWords = total - counts.Off;
-        
-        // Percentages
+
+        // ========================================
+        // STEP 1 — Core percentage metrics
+        // ========================================
+
         const pA1 = (counts.A1 / total) * 100;
         const pA2 = (counts.A2 / total) * 100;
         const pB1 = (counts.B1 / total) * 100;
@@ -1596,111 +1638,248 @@
         const pC2 = (counts.C2 / total) * 100;
         const pOff = (counts.Off / total) * 100;
 
-        const pBasic = pA1 + pA2;
-        const pB2C1 = pB2 + pC1;
-        const pC1C2 = pC1 + pC2;
-        
-        // Weighted difficulty of on-list words only
+        const pBasic    = pA1 + pA2;            // A1 + A2
+        const pAdvanced = pC1 + pC2;            // C1 + C2 only (key discriminator)
+        const pB2Plus   = pB2 + pC1 + pC2;      // B2 + C1 + C2
+        const pB1Plus   = pB1 + pB2 + pC1 + pC2;
+
         const avgDifficulty = onListWords > 0 ? weightedSum / onListWords : 1;
-        
-        // Calculate effective advanced vocabulary
-        // Only count off-list words that are genuinely difficult
-        const genuinelyDifficultOffList = offListAnalysis.filter(item => item.difficultyWeight >= 1.0).length;
-        
-        // More conservative calculation of effective advanced
-        const effectiveAdvanced = counts.B2 + counts.C1 + counts.C2 + (genuinelyDifficultOffList * 0.5);
-        const effectiveAdvancedPct = (effectiveAdvanced / total) * 100;
-        
-        // Sentence complexity
-        const avgSentLen = metrics.avgSentenceLength;
+
+        // ========================================
+        // STEP 2 — Unique word-type counts
+        // ========================================
+
+        const uniqueB2       = wordsByLevel.B2 ? wordsByLevel.B2.size : 0;
+        const uniqueC1       = wordsByLevel.C1 ? wordsByLevel.C1.size : 0;
+        const uniqueC2       = wordsByLevel.C2 ? wordsByLevel.C2.size : 0;
+        const uniqueAdvanced = uniqueC1 + uniqueC2;
+
+        // ========================================
+        // STEP 3 — Effective advanced vocabulary
+        //          (compensates for words missing from word list)
+        // ========================================
+
+        const difficultOffList = offListAnalysis.filter(i => i.difficultyWeight >= 1.0);
+        const literaryPct      = (literaryOffListCount / total) * 100;
+        const difficultOffPct  = (difficultOffList.length / total) * 100;
+        const effectiveAdvancedPct = pAdvanced + literaryPct + difficultOffPct * 0.5;
+
+        // ========================================
+        // STEP 4 — 95th-percentile coverage level
+        // ========================================
+
+        let cumulative = 0;
+        let p95Level   = 'C2';
+        const threshold95 = onListWords * 0.95;
+        for (const lev of ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']) {
+            cumulative += counts[lev];
+            if (cumulative >= threshold95 && p95Level === 'C2') {
+                p95Level = lev;
+            }
+        }
+
+        // ========================================
+        // STEP 5 — Sentence complexity score (0 – ~5)
+        // ========================================
+
+        const avgSentLen       = metrics.avgSentenceLength;
         const complexSentRatio = metrics.complexSentenceRatio;
-        
-        // Word length
-        const avgWordLen = metrics.avgWordLength;
-        
-        // Determine text type
-        const textTypeIndicator = textStyle.isLiterary ? '📚 Literary' : 
-                                  textStyle.isAcademic ? '📰 Academic' : 
-                                  textStyle.isSimple ? '📋 Simple/Notice' : '📝 General';
-        
-        // ===== LEVEL DETERMINATION =====
-        
+        const avgWordLen       = metrics.avgWordLength;
+
+        let sentComplexity = 0;
+        if      (avgSentLen >= 25) sentComplexity += 2.5;
+        else if (avgSentLen >= 20) sentComplexity += 2.0;
+        else if (avgSentLen >= 16) sentComplexity += 1.5;
+        else if (avgSentLen >= 12) sentComplexity += 1.0;
+        else if (avgSentLen >= 8)  sentComplexity += 0.5;
+        sentComplexity += Math.min(complexSentRatio * 2.5, 2.0);
+        sentComplexity += Math.min(textStyle.syntaxComplexity * 0.3, 1.0);
+
+        // ========================================
+        // STEP 6 — Style complexity score (0 – ~5)
+        // ========================================
+
+        let styleComplexity = 0;
+        styleComplexity += Math.min(textStyle.idiomWeight * 0.4, 2.0);
+        styleComplexity += Math.min(textStyle.figurativeWeight * 0.3, 1.5);
+        styleComplexity += Math.min(literaryOffListCount * 0.4, 1.5);
+        if (avgWordLen >= 5.5)             styleComplexity += 0.5;
+        if (metrics.lexicalDiversity >= 0.65) styleComplexity += 0.5;
+
+        // ========================================
+        // STEP 7 — Text type indicator
+        // ========================================
+
+        const textTypeIndicator = textStyle.isLiterary ? '📚 Literary' :
+                                  textStyle.isAcademic ? '📰 Academic' :
+                                  textStyle.isSimple   ? '📋 Simple/Notice' : '📝 General';
+
+        // ========================================
+        // STEP 8 — Multi-criteria level determination
+        // ========================================
+
         let level, confidence;
         const factors = [];
-        
-        // Simple text adjustment - if it reads like a notice/announcement, lower the threshold
-        const simpleTextBonus = textStyle.isSimple ? -0.5 : 0;
-        
-        // Literary text adjustment
-        const literaryBonus = textStyle.isLiterary ? (textStyle.idiomWeight * 0.3 + literaryOffListCount * 0.5) : 0;
-        
-        // Adjusted score
-        const adjustedAdvancedPct = effectiveAdvancedPct + simpleTextBonus + literaryBonus;
-        
-        // C2: Mastery — significant C2 vocabulary presence
-        if (pC2 >= 5 ||
-            (pC2 >= 2 && adjustedAdvancedPct >= 20) ||
-            (pC2 >= 3 && pC1C2 >= 10 && textStyle.isLiterary)) {
+
+        // ---- C2: Mastery ----
+        const c2 = (
+            pC2 >= 3 ||
+            (pC2 >= 1.5 && pAdvanced >= 5) ||
+            (pC2 >= 1 && effectiveAdvancedPct >= 5 && (sentComplexity >= 3 || styleComplexity >= 3)) ||
+            (effectiveAdvancedPct >= 7 && sentComplexity >= 3.5 && styleComplexity >= 2.5) ||
+            (pAdvanced >= 5 && uniqueAdvanced >= 10 && sentComplexity >= 3)
+        );
+
+        // ---- C1: Advanced ----
+        const c1 = (
+            pAdvanced >= 3 ||
+            effectiveAdvancedPct >= 3.5 ||
+            (pAdvanced >= 1.5 && sentComplexity >= 2.5) ||
+            (pAdvanced >= 1.5 && styleComplexity >= 2.5) ||
+            (uniqueAdvanced >= 5 && pAdvanced >= 1) ||
+            (pAdvanced >= 2 && uniqueAdvanced >= 3 && sentComplexity >= 2) ||
+            (pB2 >= 5 && pAdvanced >= 1 && sentComplexity >= 2 && uniqueAdvanced >= 3) ||
+            (effectiveAdvancedPct >= 2.5 && sentComplexity >= 2.5 && styleComplexity >= 2)
+        );
+
+        // ---- B2: Upper-intermediate ----
+        const b2 = (
+            pB2 >= 5 ||
+            (pB2 >= 3 && pAdvanced >= 0.5 && sentComplexity >= 1.5) ||
+            (pB2 >= 3 && uniqueB2 >= 5) ||
+            pB2Plus >= 6 ||
+            (p95Level === 'B2' && pB2 >= 3) ||
+            (avgDifficulty >= 2.5 && pB1Plus >= 15)
+        );
+
+        // ---- B1: Intermediate ----
+        const b1 = (
+            pB1 >= 5 ||
+            pB1Plus >= 8 ||
+            (pB1 >= 3 && pB2 >= 1) ||
+            avgDifficulty >= 2.0 ||
+            (p95Level === 'B1' && pB1 >= 3) ||
+            pBasic < 82
+        );
+
+        // ---- A2: Elementary ----
+        const a2 = (
+            pBasic < 90 ||
+            pB1 >= 2 ||
+            avgSentLen >= 8
+        );
+
+        // Assign level — highest matching tier wins
+        if (c2) {
             level = 'C2';
-            confidence = pC2 >= 5 ? 'high' : 'medium';
-            factors.push(`${pC2.toFixed(1)}% C2 vocabulary`);
-            if (textStyle.isLiterary) factors.push('literary features');
+            confidence = (pC2 >= 3 || (pAdvanced >= 5 && sentComplexity >= 3)) ? 'high' : 'medium';
+            if (pC2 >= 1)             factors.push(`${pC2.toFixed(1)}% C2 vocabulary`);
+            if (pAdvanced >= 2)       factors.push(`${pAdvanced.toFixed(1)}% C1+C2 vocabulary`);
+            if (sentComplexity >= 3)  factors.push('highly complex sentence structure');
+            if (styleComplexity >= 2.5) factors.push('sophisticated stylistic features');
         }
-        // C2: Very sophisticated (previously C1+)
-        else if (adjustedAdvancedPct >= 18 ||
-            (adjustedAdvancedPct >= 12 && avgDifficulty >= 3.0 && textStyle.isLiterary)) {
-            level = 'C2';
-            confidence = adjustedAdvancedPct >= 22 ? 'high' : 'medium';
-            factors.push(`${effectiveAdvancedPct.toFixed(1)}% advanced vocabulary`);
-            if (textStyle.isLiterary) factors.push('literary features');
-        }
-        // C1: Advanced
-        else if (adjustedAdvancedPct >= 10 ||
-                 (adjustedAdvancedPct >= 7 && avgDifficulty >= 2.8)) {
+        else if (c1) {
             level = 'C1';
-            confidence = adjustedAdvancedPct >= 12 ? 'high' : 'medium';
-            factors.push(`${effectiveAdvancedPct.toFixed(1)}% advanced vocabulary`);
+            confidence = (pAdvanced >= 3 || (effectiveAdvancedPct >= 3 && sentComplexity >= 2.5)) ? 'high' : 'medium';
+            factors.push(`${pAdvanced.toFixed(1)}% C1+C2 vocabulary`);
+            if (uniqueAdvanced >= 3)    factors.push(`${uniqueAdvanced} unique C1/C2 word types`);
+            if (sentComplexity >= 2.5)  factors.push('complex sentence structure');
+            if (styleComplexity >= 2)   factors.push('advanced stylistic features');
         }
-        // B2: Upper-intermediate
-        else if (adjustedAdvancedPct >= 5 ||
-                 (pB2C1 >= 6 && avgSentLen >= 15)) {
+        else if (b2) {
             level = 'B2';
-            confidence = adjustedAdvancedPct >= 7 ? 'high' : 'medium';
-            factors.push(`${pB2C1.toFixed(1)}% B2/C1 vocabulary`);
+            confidence = (pB2 >= 5 || pB2Plus >= 7) ? 'high' : 'medium';
+            factors.push(`${pB2.toFixed(1)}% B2 vocabulary`);
+            if (pAdvanced >= 0.5)      factors.push(`${pAdvanced.toFixed(1)}% C1+C2 vocabulary`);
+            if (sentComplexity >= 1.5) factors.push('moderate sentence complexity');
         }
-        // B1: Intermediate
-        else if (pB1 >= 8 || avgDifficulty >= 2.2 || pB2C1 >= 3) {
+        else if (b1) {
             level = 'B1';
-            confidence = 'high';
+            confidence = pB1 >= 8 ? 'high' : 'medium';
             factors.push(`${pB1.toFixed(1)}% B1 vocabulary`);
+            if (pB2 >= 1) factors.push('some B2 vocabulary present');
         }
-        // A2: Elementary
-        else if (pBasic < 85 || pB1 >= 5) {
+        else if (a2) {
             level = 'A2';
             confidence = 'high';
-            factors.push(`${pBasic.toFixed(1)}% basic vocabulary`);
+            factors.push(`${pBasic.toFixed(1)}% basic (A1+A2) vocabulary`);
         }
-        // A1: Beginner
         else {
             level = 'A1';
             confidence = 'high';
-            factors.push(`${pBasic.toFixed(1)}% basic vocabulary`);
+            factors.push(`${pBasic.toFixed(1)}% basic (A1+A2) vocabulary`);
         }
 
-        // Short text warning
+        // ========================================
+        // STEP 9 — Sanity-check overrides
+        // ========================================
+
+        // Override A: No C1/C2 on-list words + no significant off-list complexity → cap at B2
+        if (counts.C1 === 0 && counts.C2 === 0 &&
+            literaryOffListCount < 2 && difficultOffList.length < 4 &&
+            sentComplexity < 3.5 && styleComplexity < 2.5 &&
+            (level === 'C1' || level === 'C2')) {
+            level = 'B2';
+            confidence = 'medium';
+            factors.push('no C1/C2 vocabulary detected in word list');
+        }
+
+        // Override B: Very little upper-level vocabulary → cap at B1
+        if (pB2Plus < 2 && effectiveAdvancedPct < 2 &&
+            uniqueB2 + uniqueAdvanced < 3 &&
+            (level === 'B2' || level === 'C1' || level === 'C2')) {
+            level = 'B1';
+            confidence = 'medium';
+            factors.push('minimal upper-level vocabulary');
+        }
+
+        // Override C: Overwhelmingly basic + low complexity → cap appropriately
+        if (pBasic >= 88 && pB2Plus < 3 && sentComplexity < 1.5 &&
+            (level === 'B2' || level === 'C1' || level === 'C2')) {
+            level = pB1 >= 5 ? 'B1' : 'A2';
+            confidence = 'medium';
+            factors.push('vocabulary is overwhelmingly basic');
+        }
+
+        // Override D: C1 needs minimum absolute advanced-word evidence
+        if (level === 'C1' && uniqueAdvanced < 2 &&
+            literaryOffListCount < 2 && difficultOffList.length < 3) {
+            level = 'B2';
+            confidence = 'medium';
+            factors.push('insufficient unique advanced vocabulary for C1');
+        }
+
+        // Override E: C2 needs either real C2 words or overwhelming complexity evidence
+        if (level === 'C2' && uniqueC2 < 2 &&
+            !(sentComplexity >= 4 && styleComplexity >= 3 && effectiveAdvancedPct >= 5)) {
+            level = 'C1';
+            confidence = 'medium';
+            factors.push('insufficient evidence for C2, downgraded to C1');
+        }
+
+        // Override F: Simple text structure can lower by 1 (only if syntax also simple)
+        if (textStyle.isSimple && sentComplexity < 2 &&
+            (level === 'B2' || level === 'C1')) {
+            const levelOrder = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+            const idx = levelOrder.indexOf(level);
+            level = levelOrder[Math.max(idx - 1, 0)];
+            factors.push('simple text structure (notices, instructions, etc.)');
+            if (confidence === 'high') confidence = 'medium';
+        }
+
+        // Short-text confidence reduction
         if (total < 50) {
             if (confidence === 'high') confidence = 'medium';
-            else if (confidence === 'medium') confidence = 'low';
+            else confidence = 'low';
+        }
+        if (total < 30) {
+            confidence = 'low';
         }
 
-        // Simple text type can lower the level
-        if (textStyle.isSimple && (level === 'B2' || level === 'C1')) {
-            level = 'B1';
-            factors.push('simple text structure');
-        }
-        
-        // ===== OUTPUT =====
-        
+        // ========================================
+        // STEP 10 — Build output
+        // ========================================
+
         const levelDescriptions = {
             'C2': 'This text requires <strong>mastery-level (C2) proficiency</strong>.',
             'C1': 'This text requires <strong>advanced (C1) proficiency</strong>.',
@@ -1709,66 +1888,76 @@
             'A2': 'This text is suitable for <strong>elementary (A2)</strong> learners.',
             'A1': 'This text is suitable for <strong>beginners (A1)</strong>.'
         };
-        
+
         let explanation = levelDescriptions[level];
         if (factors.length > 0) {
-            explanation += ` Key indicators: ${factors.join('; ')}.`;
+            const uniqueFactors = [...new Set(factors)];
+            explanation += ` Key indicators: ${uniqueFactors.join('; ')}.`;
         }
-        
+
         const textTypeNote = `
-            <br><br><em style="color:#6b7280;">Text Type:</em> 
+            <br><br><em style="color:#6b7280;">Text Type:</em>
             <span style="color:#374151; font-weight: 600;">${textTypeIndicator}</span>
         `;
-        
+
         const metricsNote = `
-            <br><em style="color:#6b7280;">Text Metrics:</em> 
+            <br><em style="color:#6b7280;">Text Metrics:</em>
             <span style="color:#374151;">
-            ${total} words across ${metrics.sentenceCount} sentences 
-            (avg ${avgSentLen.toFixed(1)} words/sentence) • 
+            ${total} words across ${metrics.sentenceCount} sentences
+            (avg ${avgSentLen.toFixed(1)} words/sentence) •
             Avg word length: ${avgWordLen.toFixed(1)} chars
             </span>
         `;
-        
+
         const vocabNote = `
             <br><em style="color:#6b7280;">Vocabulary:</em>
             <span style="color:#374151;">
             Basic (A1+A2): ${pBasic.toFixed(1)}% •
             Intermediate (B1): ${pB1.toFixed(1)}% •
-            Advanced (B2+C1): ${pB2C1.toFixed(1)}% •
-            Mastery (C1+C2): ${pC1C2.toFixed(1)}% •
+            Upper-Int (B2): ${pB2.toFixed(1)}% •
+            Advanced (C1+C2): ${pAdvanced.toFixed(1)}% •
             Weighted avg: ${avgDifficulty.toFixed(2)}/6
             </span>
         `;
-        
+
+        const diagnosticNote = `
+            <br><em style="color:#6b7280;">Analysis Detail:</em>
+            <span style="color:#374151;">
+            Eff. advanced: ${effectiveAdvancedPct.toFixed(1)}% •
+            Unique C1/C2 types: ${uniqueAdvanced} •
+            Syntax score: ${sentComplexity.toFixed(1)}/5 •
+            Style score: ${styleComplexity.toFixed(1)}/5 •
+            95th pctile: ${p95Level}
+            </span>
+        `;
+
         let lengthNote = '';
         if (total < 50) {
             lengthNote = `<br><br><em style="color:#d97706;">⚠️ Short text (${total} words) — results may be less reliable.</em>`;
         }
-        
-        const confLabels = { 
-            'high': '🟢 High confidence', 
-            'medium': '🟡 Medium confidence', 
-            'low': '🟠 Low confidence' 
-        };
-        
-        const nextLevel = {
-            'A1': 'A2', 'A2': 'B1', 'B1': 'B2', 'B2': 'C1',
-            'C1': 'C2'
-        }[level] || null;
 
-        const displayLevel = level;
+        const confLabels = {
+            'high':   '🟢 High confidence',
+            'medium': '🟡 Medium confidence',
+            'low':    '🟠 Low confidence'
+        };
+
+        const nextLevel = {
+            'A1': 'A2', 'A2': 'B1', 'B1': 'B2', 'B2': 'C1', 'C1': 'C2'
+        }[level] || null;
 
         const recommendationText = level === 'C2'
             ? `This passage is appropriate for <strong>C2</strong> learners and represents the highest level of language proficiency.`
-            : `This passage is appropriate for <strong>${displayLevel}</strong> learners for intensive study, or for <strong>${nextLevel}</strong> learners for extensive reading practice.`;
+            : `This passage is appropriate for <strong>${level}</strong> learners for intensive study, or for <strong>${nextLevel}</strong> learners for extensive reading practice.`;
 
         document.getElementById('verdict-text').innerHTML = `
-            <strong style="font-size: 1.4em; color: #1e3a8a;">Text Level: ${displayLevel}</strong>
+            <strong style="font-size: 1.4em; color: #1e3a8a;">Text Level: ${level}</strong>
             <span style="margin-left: 15px; font-size: 0.85em; color: #6b7280;">${confLabels[confidence]}</span>
             <br><br>${explanation}
             ${textTypeNote}
             ${metricsNote}
             ${vocabNote}
+            ${diagnosticNote}
             ${lengthNote}
             <br><br><em style="color:#6b7280;">Recommendation:</em>
             <span style="color:#374151;">
