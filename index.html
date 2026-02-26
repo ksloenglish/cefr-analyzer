@@ -140,16 +140,87 @@
         .level-C2 { background-color: var(--c2-color); color: var(--c2-text); border-bottom: 2px solid #a855f7; }
         .level-XX { color: #4b5563; }
 
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 15px; margin-bottom: 25px; }
-        .stat-card {
-            background: white; padding: 15px; text-align: center;
-            border-radius: 12px; border: 1px solid #f3f4f6;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: transform 0.2s;
+        /* ============ TREEMAP STYLES ============ */
+        .treemap-section { margin-bottom: 25px; }
+        .treemap-header {
+            display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px;
         }
-        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .stat-value { font-size: 1.75rem; font-weight: 800; display: block; margin-bottom: 5px; color: #111827; }
-        .stat-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; }
-        .stat-percent { display: block; font-size: 0.7rem; color: #9ca3af; margin-bottom: 4px; }
+        .treemap-total-value {
+            font-size: 2.4rem; font-weight: 800; color: #111827; line-height: 1;
+        }
+        .treemap-total-label {
+            font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.06em;
+            color: var(--text-muted); font-weight: 600;
+        }
+        .treemap-container {
+            position: relative; width: 100%; height: 310px;
+            border-radius: 14px; overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+            border: 1px solid #e5e7eb; background: #ffffff;
+        }
+        .treemap-cell {
+            position: absolute; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            box-sizing: border-box; border: 2px solid #ffffff;
+            cursor: default; overflow: hidden;
+            padding: 10px 8px;
+            gap: 3px;
+            opacity: 0; transform: scale(0.92);
+            animation: treemapCellIn 0.45s ease-out forwards;
+            transition: filter 0.2s ease, box-shadow 0.2s ease;
+        }
+        .treemap-cell:hover {
+            filter: brightness(0.91) saturate(1.15);
+            box-shadow: inset 0 0 0 2px rgba(0,0,0,0.08), 0 6px 16px rgba(0,0,0,0.12);
+            z-index: 10;
+        }
+        @keyframes treemapCellIn {
+            from { opacity: 0; transform: scale(0.92); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+        .treemap-cell-level {
+            font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.08em; opacity: 0.6; line-height: 1;
+        }
+        .treemap-cell-count {
+            font-size: 1.65rem; font-weight: 800; line-height: 1.15;
+        }
+        .treemap-cell-percent {
+            font-size: 0.76rem; font-weight: 600; opacity: 0.7; line-height: 1;
+        }
+        .treemap-cell.size-lg .treemap-cell-level  { font-size: 0.82rem; }
+        .treemap-cell.size-lg .treemap-cell-count   { font-size: 2.1rem; }
+        .treemap-cell.size-lg .treemap-cell-percent  { font-size: 0.85rem; }
+        .treemap-cell.size-md .treemap-cell-level  { font-size: 0.72rem; }
+        .treemap-cell.size-md .treemap-cell-count   { font-size: 1.35rem; }
+        .treemap-cell.size-md .treemap-cell-percent  { font-size: 0.72rem; }
+        .treemap-cell.size-sm .treemap-cell-level  { font-size: 0.62rem; }
+        .treemap-cell.size-sm .treemap-cell-count   { font-size: 1rem; }
+        .treemap-cell.size-sm .treemap-cell-percent  { font-size: 0.62rem; }
+        .treemap-cell.size-sm { padding: 6px 5px; gap: 2px; }
+        .treemap-cell.size-xs .treemap-cell-level  { font-size: 0.58rem; letter-spacing: 0.04em; }
+        .treemap-cell.size-xs .treemap-cell-count   { font-size: 0.82rem; }
+        .treemap-cell.size-xs .treemap-cell-percent  { display: none; }
+        .treemap-cell.size-xs { padding: 4px 4px; gap: 1px; }
+        .treemap-cell.size-xxs .treemap-cell-level  { font-size: 0.52rem; }
+        .treemap-cell.size-xxs .treemap-cell-count   { font-size: 0.72rem; }
+        .treemap-cell.size-xxs .treemap-cell-percent { display: none; }
+        .treemap-cell.size-xxs { padding: 2px 3px; gap: 1px; }
+        /* hide count too when truly tiny */
+        .treemap-cell.size-dot .treemap-cell-level   { font-size: 0.5rem; }
+        .treemap-cell.size-dot .treemap-cell-count    { display: none; }
+        .treemap-cell.size-dot .treemap-cell-percent  { display: none; }
+        .treemap-cell.size-dot { padding: 1px 2px; gap: 0; }
+
+        .treemap-tooltip {
+            position: fixed; padding: 8px 14px; background: #1f2937; color: #fff;
+            border-radius: 8px; font-size: 0.8rem; font-weight: 600;
+            pointer-events: none; z-index: 1000; white-space: nowrap;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            opacity: 0; transition: opacity 0.15s ease;
+        }
+        .treemap-tooltip.visible { opacity: 1; }
+        /* ============ END TREEMAP ============ */
 
         .verdict-box {
             background: linear-gradient(to right, #eff6ff, #ffffff);
@@ -164,7 +235,6 @@
         }
         .verdict-disclaimer svg { flex-shrink: 0; margin-top: 1px; }
 
-        /* Word Lists Section */
         .word-lists-wrapper { margin-top: 30px; }
         .word-lists-title {
             font-size: 1.25rem; font-weight: 700; color: #111827; margin-bottom: 20px;
@@ -241,8 +311,8 @@
             .container { padding: 20px; }
             .btn-group { flex-direction: column; }
             h1 { font-size: 1.75rem; }
+            .treemap-container { height: 240px; }
         }
-        /* Branding header */
         .brand-header {
             text-align: center;
             padding: 28px 20px 22px;
@@ -266,8 +336,6 @@
             margin: 10px auto 0;
             border-radius: 2px;
         }
-
-        /* Footer */
         .site-footer {
             text-align: center;
             padding: 24px 20px 10px;
@@ -358,15 +426,12 @@
 
         <div id="highlighted-content" class="highlighted-text"></div>
 
-        <div class="stats-grid">
-            <div class="stat-card"><span class="stat-value" id="count-total">0</span><span class="stat-label">Total Words</span></div>
-            <div class="stat-card" style="border-bottom: 3px solid var(--a1-color)"><span class="stat-value" id="count-a1">0</span><span class="stat-percent" id="percent-a1"></span><span class="stat-label">A1</span></div>
-            <div class="stat-card" style="border-bottom: 3px solid var(--a2-color)"><span class="stat-value" id="count-a2">0</span><span class="stat-percent" id="percent-a2"></span><span class="stat-label">A2</span></div>
-            <div class="stat-card" style="border-bottom: 3px solid var(--b1-color)"><span class="stat-value" id="count-b1">0</span><span class="stat-percent" id="percent-b1"></span><span class="stat-label">B1</span></div>
-            <div class="stat-card" style="border-bottom: 3px solid var(--b2-color)"><span class="stat-value" id="count-b2">0</span><span class="stat-percent" id="percent-b2"></span><span class="stat-label">B2</span></div>
-            <div class="stat-card" style="border-bottom: 3px solid var(--c1-color)"><span class="stat-value" id="count-c1">0</span><span class="stat-percent" id="percent-c1"></span><span class="stat-label">C1</span></div>
-            <div class="stat-card" style="border-bottom: 3px solid var(--c2-color)"><span class="stat-value" id="count-c2">0</span><span class="stat-percent" id="percent-c2"></span><span class="stat-label">C2</span></div>
-            <div class="stat-card"><span class="stat-value" id="count-off" style="color: #9ca3af;">0</span><span class="stat-percent" id="percent-off"></span><span class="stat-label">Off List</span></div>
+        <div class="treemap-section">
+            <div class="treemap-header">
+                <span class="treemap-total-value" id="count-total">0</span>
+                <span class="treemap-total-label">Total Words</span>
+            </div>
+            <div class="treemap-container" id="treemap-container"></div>
         </div>
 
         <div class="verdict-box">
@@ -388,6 +453,8 @@
     </div>
 </div>
 
+<div class="treemap-tooltip" id="treemap-tooltip"></div>
+
 <script>
     let dictionary = new Map();
     let dictionaryWithPos = new Map();
@@ -396,20 +463,12 @@
     const DEFAULT_CSV_URL = 'https://pfst.cf2.poecdn.net/base/text/11ce500d4f8d7a245d61f5d6c63092a32da19d4ff28b0f6b5f804a66b6e97d47';
     const DEFAULT_CSV_NAME = 'A1-C2.csv';
 
-    // ============================================================
-    // SUPPLEMENTARY WORD LIST
-    // Common words that may be missing from Oxford 5000
-    // ============================================================
-    
     const SUPPLEMENTARY_WORDS = new Map([
-        // Technology & modern terms
-        ['email', 'A2'], ['emails', 'A2'], ['online', 'A2'], ['website', 'A2'], 
+        ['email', 'A2'], ['emails', 'A2'], ['online', 'A2'], ['website', 'A2'],
         ['internet', 'A2'], ['computer', 'A1'], ['phone', 'A1'], ['video', 'A2'],
         ['app', 'A2'], ['apps', 'A2'], ['digital', 'B1'], ['wifi', 'A2'],
         ['laptop', 'A2'], ['smartphone', 'A2'], ['download', 'A2'], ['upload', 'B1'],
         ['click', 'A2'], ['username', 'A2'], ['password', 'A2'], ['login', 'A2'],
-        
-        // Common school/work terms
         ['library', 'A2'], ['exhibition', 'B1'], ['exhibitions', 'B1'],
         ['secretary', 'B1'], ['photography', 'B1'], ['photographer', 'B1'],
         ['photographers', 'B1'], ['photograph', 'B1'], ['photographs', 'B1'],
@@ -418,68 +477,42 @@
         ['creative', 'B1'], ['creativity', 'B1'], ['gallery', 'B1'],
         ['presentation', 'B1'], ['presentations', 'B1'], ['certificate', 'B1'],
         ['homework', 'A1'], ['classroom', 'A1'], ['textbook', 'A2'],
-        
-        // Common everyday words
         ['favourite', 'A1'], ['favorites', 'A1'], ['color', 'A1'], ['colour', 'A1'],
         ['center', 'A2'], ['centre', 'A2'], ['organize', 'B1'], ['organise', 'B1'],
         ['recognize', 'B1'], ['recognise', 'B1'], ['realize', 'B1'], ['realise', 'B1'],
-        ['favourite', 'A1'], ['theater', 'A2'], ['theatre', 'A2'],
+        ['theater', 'A2'], ['theatre', 'A2'],
         ['neighbor', 'A2'], ['neighbour', 'A2'], ['behavior', 'B1'], ['behaviour', 'B1'],
-        
-        // Time expressions
         ['today', 'A1'], ['tomorrow', 'A1'], ['yesterday', 'A1'], ['tonight', 'A1'],
         ['weekend', 'A1'], ['weekday', 'A2'], ['everyday', 'A1'], ['sometime', 'A2'],
         ['sometimes', 'A1'], ['always', 'A1'], ['never', 'A1'], ['often', 'A1'],
-        
-        // Numbers and ordinals
         ['first', 'A1'], ['second', 'A1'], ['third', 'A1'], ['fourth', 'A1'],
         ['fifth', 'A1'], ['sixth', 'A1'], ['seventh', 'A2'], ['eighth', 'A2'],
         ['ninth', 'A2'], ['tenth', 'A2'], ['hundred', 'A1'], ['thousand', 'A1'],
         ['million', 'A2'], ['billion', 'B1'],
-        
-        // Question words and basics
         ['who', 'A1'], ['what', 'A1'], ['where', 'A1'], ['when', 'A1'],
         ['why', 'A1'], ['how', 'A1'], ['which', 'A1'],
-        
-        // Pronouns
         ['everyone', 'A1'], ['everybody', 'A1'], ['everything', 'A1'],
         ['someone', 'A1'], ['somebody', 'A1'], ['something', 'A1'],
         ['anyone', 'A1'], ['anybody', 'A1'], ['anything', 'A1'],
         ['no one', 'A1'], ['nobody', 'A1'], ['nothing', 'A1'],
-        
-        // Common verbs missing forms
         ['gonna', 'A2'], ['wanna', 'A2'], ['gotta', 'A2'],
-        
-        // Connectors
         ['also', 'A1'], ['too', 'A1'], ['either', 'A2'], ['neither', 'A2'],
         ['both', 'A1'], ['however', 'B1'], ['therefore', 'B2'], ['although', 'B1'],
         ['though', 'B1'], ['unless', 'B1'], ['whether', 'B1'], ['whereas', 'B2'],
-        
-        // Common adjectives
         ['okay', 'A1'], ['ok', 'A1'], ['nice', 'A1'], ['great', 'A1'],
         ['good', 'A1'], ['bad', 'A1'], ['best', 'A1'], ['worst', 'A2'],
-        ['better', 'A1'], ['worse', 'A2'], ['favourite', 'A1'],
-        
-        // Common nouns
+        ['better', 'A1'], ['worse', 'A2'],
         ['mom', 'A1'], ['dad', 'A1'], ['mum', 'A1'], ['mommy', 'A1'], ['daddy', 'A1'],
         ['grandma', 'A1'], ['grandpa', 'A1'], ['granny', 'A1'],
         ['kid', 'A1'], ['kids', 'A1'], ['guy', 'A2'], ['guys', 'A2'],
         ['stuff', 'A2'], ['thing', 'A1'], ['things', 'A1'],
-        
-        // Expressions
         ['hello', 'A1'], ['hi', 'A1'], ['bye', 'A1'], ['goodbye', 'A1'],
         ['please', 'A1'], ['thanks', 'A1'], ['sorry', 'A1'], ['excuse', 'A1'],
         ['welcome', 'A1'], ['congratulations', 'A2'],
-        
-        // Phrasal idiom components that appear as single words
         ['breath', 'B1'], ['vote', 'B1'], ['votes', 'B1'],
         ['soar', 'B2'], ['soars', 'B2'], ['soaring', 'B2']
     ]);
 
-    // ============================================================
-    // BRITISH/AMERICAN SPELLING VARIANTS
-    // ============================================================
-    
     const SPELLING_VARIANTS = new Map([
         ['colour', 'color'], ['colours', 'colors'], ['coloured', 'colored'], ['colouring', 'coloring'],
         ['favour', 'favor'], ['favours', 'favors'], ['favoured', 'favored'], ['favouring', 'favoring'],
@@ -507,8 +540,7 @@
         ['cancelled', 'canceled'], ['cancelling', 'canceling'],
         ['modelling', 'modeling'], ['modelled', 'modeled'],
         ['labelling', 'labeling'], ['labelled', 'labeled'],
-        ['jewellery', 'jewelry'],
-        ['grey', 'gray'],
+        ['jewellery', 'jewelry'], ['grey', 'gray'],
         ['programme', 'program'], ['programmes', 'programs'],
         ['catalogue', 'catalog'], ['catalogues', 'catalogs'],
         ['dialogue', 'dialog'], ['dialogues', 'dialogs'],
@@ -518,40 +550,23 @@
         ['practise', 'practice'], ['practised', 'practiced'], ['practising', 'practicing']
     ]);
 
-    // ============================================================
-    // PROPER NOUNS AND SPECIAL TERMS
-    // ============================================================
-    
     const PROPER_NOUNS = new Set([
-        // Common first names
         'timothy', 'cheung', 'james', 'john', 'mary', 'sarah', 'michael', 'jennifer',
         'david', 'lisa', 'robert', 'susan', 'william', 'jessica', 'richard', 'ashley',
         'michelle', 'obama', 'marian', 'robinson', 'fraser', 'craig', 'robbie',
         'harry', 'daisy', 'chan', 'atid', 'chai', 'omer', 'soker', 'zara',
         'barack', 'joe', 'biden', 'trump', 'hillary', 'clinton',
-        
-        // Places
         'chicago', 'seoul', 'bangkok', 'thailand', 'korea', 'hong', 'kong', 'australia',
         'australian', 'america', 'american', 'english', 'british', 'chinese', 'japanese',
         'thai', 'korean', 'european', 'asian', 'african', 'york', 'london', 'paris',
         'united', 'states',
-        
-        // Brands/Companies
         'shein', 'temu', 'ebay', 'facebook', 'marketplace', 'anthropic', 'google',
         'amazon', 'apple', 'microsoft', 'netflix', 'spotify', 'instagram', 'twitter',
-        
-        // Months
         'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august',
         'september', 'october', 'november', 'december',
-        
-        // Days
         'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'
     ]);
 
-    // ============================================================
-    // LITERARY VOCABULARY (for advanced text detection)
-    // ============================================================
-    
     const LITERARY_VOCABULARY = new Set([
         'clipped', 'wry', 'witty', 'ornery', 'contentious', 'negligent', 'wholly',
         'durable', 'reverent', 'vicious', 'chastened', 'lawyerly', 'dictatorial',
@@ -562,10 +577,6 @@
         'infectious', 'limelight', 'scrapped', 'chide', 'bolster', 'recounted'
     ]);
 
-    // ============================================================
-    // IDIOM PATTERNS (for advanced text detection)
-    // ============================================================
-    
     const IDIOM_PATTERNS = [
         { pattern: /rule the roost/gi, level: 'C1+', weight: 3 },
         { pattern: /chew(ed|ing|s)? (him|her|me|them|us|you) out/gi, level: 'C1+', weight: 3 },
@@ -584,10 +595,6 @@
         { pattern: /make(s)? (your |my |his |her |their )?(imagination |dreams? )?soar/gi, level: 'B2', weight: 1.5 }
     ];
 
-    // ============================================================
-    // FIGURATIVE LANGUAGE PATTERNS
-    // ============================================================
-    
     const FIGURATIVE_PATTERNS = [
         { pattern: /flame(s)? (inside|within|of)/gi, weight: 2 },
         { pattern: /keep (the |their |her |his |my )?flame lit/gi, weight: 2.5 },
@@ -595,10 +602,6 @@
         { pattern: /pulse of (something|anything)/gi, weight: 2 }
     ];
 
-    // ============================================================
-    // COMPLEX SYNTAX PATTERNS
-    // ============================================================
-    
     const COMPLEX_SYNTAX_PATTERNS = [
         { pattern: /had I been/gi, weight: 2, type: 'subjunctive_inversion' },
         { pattern: /were (I|he|she|we|they) to/gi, weight: 2, type: 'subjunctive_inversion' },
@@ -608,10 +611,6 @@
         { pattern: / – .{10,60} – /g, weight: 1.5, type: 'dash_parenthetical' }
     ];
 
-    // ============================================================
-    // CONTRACTIONS
-    // ============================================================
-    
     const CONTRACTIONS = new Map([
         ["i'm", "be"], ["you're", "be"], ["he's", "be"], ["she's", "be"],
         ["it's", "be"], ["we're", "be"], ["they're", "be"], ["i've", "have"],
@@ -629,10 +628,6 @@
         ["there's", "there"], ["where's", "where"], ["how's", "how"]
     ]);
 
-    // ============================================================
-    // IRREGULAR VERBS AND FORMS
-    // ============================================================
-    
     const IRREGULAR_VERBS = new Map([
         ['was', 'be'], ['were', 'be'], ['been', 'be'], ['being', 'be'],
         ['had', 'have'], ['has', 'have'], ['having', 'have'],
@@ -703,10 +698,6 @@
         ['thieves', 'thief'], ['loaves', 'loaf']
     ]);
 
-    // ============================================================
-    // CSV LOADING AND PARSING
-    // ============================================================
-
     async function loadDefaultCSV() {
         try {
             document.getElementById('file-status').innerHTML = '<span style="color: #6366f1;">⏳ Loading default Oxford 5000 + Cambridge C2 word list...</span>';
@@ -723,7 +714,6 @@
             document.getElementById('file-status').innerHTML = '<span style="color: #dc2626;">⚠️ Failed to load default file. Please upload a CSV manually.</span>';
         }
     }
-
     loadDefaultCSV();
 
     document.getElementById('csvFile').addEventListener('change', function(e) {
@@ -738,12 +728,9 @@
     });
 
     function parseCSV(csvText) {
-        dictionary.clear();
-        dictionaryWithPos.clear();
+        dictionary.clear(); dictionaryWithPos.clear();
         const levelRank = { 'A1': 1, 'A2': 2, 'B1': 3, 'B2': 4, 'C1': 5, 'C2': 6 };
-        const lines = csvText.split(/\r?\n/);
-        let count = 0;
-
+        const lines = csvText.split(/\r?\n/); let count = 0;
         lines.forEach(line => {
             if (!line.trim()) return;
             const parts = line.split(',');
@@ -752,652 +739,343 @@
             const word = parts[1].trim();
             const pos = parts.length > 2 ? parts[2].trim().toLowerCase() : '';
             const cleanWord = word.toLowerCase();
-
             if (!['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].includes(level)) return;
-
             if (pos) {
-                let normPos = pos.startsWith('v') ? 'v' : pos.startsWith('n') ? 'n' : 
+                let normPos = pos.startsWith('v') ? 'v' : pos.startsWith('n') ? 'n' :
                               pos.startsWith('adj') ? 'adj' : pos.startsWith('adv') ? 'adv' : pos;
                 dictionaryWithPos.set(`${cleanWord},${normPos}`, level);
             }
-
             if (!dictionary.has(cleanWord)) {
-                dictionary.set(cleanWord, { level: level, pos: pos });
+                dictionary.set(cleanWord, { level, pos });
             } else {
-                const currentEntry = dictionary.get(cleanWord);
-                const currentRank = levelRank[currentEntry.level] || 99;
-                const newRank = levelRank[level] || 99;
-                if (newRank < currentRank) {
-                    dictionary.set(cleanWord, { level: level, pos: pos });
-                }
+                const cur = dictionary.get(cleanWord);
+                if ((levelRank[level] || 99) < (levelRank[cur.level] || 99))
+                    dictionary.set(cleanWord, { level, pos });
             }
             count++;
         });
-
         isFileLoaded = true;
         document.getElementById('file-status').textContent = `✓ Successfully loaded ${count} words from database.`;
     }
 
-    // ============================================================
-    // WORD LOOKUP (with supplementary list and spelling variants)
-    // ============================================================
-    
     function lookupWord(word) {
         const lower = word.toLowerCase();
-        
-        // 1. Check main dictionary
-        if (dictionary.has(lower)) {
-            return { found: true, level: dictionary.get(lower).level, source: 'dictionary' };
-        }
-        
-        // 2. Check supplementary words
-        if (SUPPLEMENTARY_WORDS.has(lower)) {
-            return { found: true, level: SUPPLEMENTARY_WORDS.get(lower), source: 'supplementary' };
-        }
-        
-        // 3. Check British/American spelling variants
+        if (dictionary.has(lower)) return { found: true, level: dictionary.get(lower).level, source: 'dictionary' };
+        if (SUPPLEMENTARY_WORDS.has(lower)) return { found: true, level: SUPPLEMENTARY_WORDS.get(lower), source: 'supplementary' };
         if (SPELLING_VARIANTS.has(lower)) {
-            const americanSpelling = SPELLING_VARIANTS.get(lower);
-            if (dictionary.has(americanSpelling)) {
-                return { found: true, level: dictionary.get(americanSpelling).level, source: 'variant' };
-            }
-            if (SUPPLEMENTARY_WORDS.has(americanSpelling)) {
-                return { found: true, level: SUPPLEMENTARY_WORDS.get(americanSpelling), source: 'variant' };
-            }
+            const am = SPELLING_VARIANTS.get(lower);
+            if (dictionary.has(am)) return { found: true, level: dictionary.get(am).level, source: 'variant' };
+            if (SUPPLEMENTARY_WORDS.has(am)) return { found: true, level: SUPPLEMENTARY_WORDS.get(am), source: 'variant' };
         }
-        
         return { found: false, level: null, source: null };
     }
 
-    // ============================================================
-    // LEMMATIZATION ENGINE
-    // ============================================================
-
     function lemmatize(word) {
         const lower = word.toLowerCase().replace(/['']/g, "'");
-        
-        // Direct lookup
-        const directLookup = lookupWord(lower);
-        if (directLookup.found) {
-            return { lemma: lower, found: true, level: directLookup.level };
-        }
-        
-        // Irregular forms
+        const d = lookupWord(lower);
+        if (d.found) return { lemma: lower, found: true, level: d.level };
         if (IRREGULAR_VERBS.has(lower)) {
             const base = IRREGULAR_VERBS.get(lower);
-            const baseLookup = lookupWord(base);
-            if (baseLookup.found) {
-                return { lemma: base, found: true, level: baseLookup.level };
-            }
+            const b = lookupWord(base);
+            if (b.found) return { lemma: base, found: true, level: b.level };
         }
-        
-        // Contractions
         if (CONTRACTIONS.has(lower)) {
             const base = CONTRACTIONS.get(lower);
-            const baseLookup = lookupWord(base);
-            if (baseLookup.found) {
-                return { lemma: base, found: true, level: baseLookup.level, isContraction: true };
-            }
+            const b = lookupWord(base);
+            if (b.found) return { lemma: base, found: true, level: b.level, isContraction: true };
             return { lemma: lower, found: true, level: 'A1', isContraction: true };
         }
-        
-        // Morphological analysis
-        const morphResult = tryMorphologicalAnalysis(lower);
-        if (morphResult.found) {
-            return morphResult;
-        }
-        
+        const m = tryMorphologicalAnalysis(lower);
+        if (m.found) return m;
         return { lemma: lower, found: false, level: null };
     }
 
     function tryMorphologicalAnalysis(word) {
         const tryLookup = (base) => {
-            const result = lookupWord(base);
-            if (result.found) {
-                return { lemma: base, found: true, level: result.level };
-            }
-            return null;
+            const r = lookupWord(base);
+            return r.found ? { lemma: base, found: true, level: r.level } : null;
         };
-        
-        // -ing forms
         if (word.endsWith('ing') && word.length > 4) {
             let base = word.slice(0, -3);
-            if (base.length >= 2) {
-                const lastTwo = base.slice(-2);
-                if (lastTwo[0] === lastTwo[1] && /[bcdfgklmnprstvz]/.test(lastTwo[0])) {
-                    const result = tryLookup(base.slice(0, -1));
-                    if (result) return result;
-                }
-            }
-            let result = tryLookup(base + 'e');
-            if (result) return result;
-            result = tryLookup(base);
-            if (result) return result;
-            if (base.endsWith('y')) {
-                result = tryLookup(base.slice(0, -1) + 'ie');
-                if (result) return result;
-            }
+            if (base.length >= 2 && base.slice(-2)[0] === base.slice(-2)[1] && /[bcdfgklmnprstvz]/.test(base.slice(-1))) { let r = tryLookup(base.slice(0, -1)); if (r) return r; }
+            let r = tryLookup(base + 'e'); if (r) return r;
+            r = tryLookup(base); if (r) return r;
+            if (base.endsWith('y')) { r = tryLookup(base.slice(0, -1) + 'ie'); if (r) return r; }
         }
-        
-        // -ed forms
         if (word.endsWith('ed') && word.length > 3) {
             let base = word.slice(0, -2);
-            if (base.length >= 2) {
-                const lastTwo = base.slice(-2);
-                if (lastTwo[0] === lastTwo[1] && /[bcdfgklmnprstvz]/.test(lastTwo[0])) {
-                    const result = tryLookup(base.slice(0, -1));
-                    if (result) return result;
-                }
-            }
-            let result = tryLookup(base + 'e');
-            if (result) return result;
-            result = tryLookup(base);
-            if (result) return result;
-            if (word.endsWith('ied')) {
-                result = tryLookup(word.slice(0, -3) + 'y');
-                if (result) return result;
-            }
+            if (base.length >= 2 && base.slice(-2)[0] === base.slice(-2)[1] && /[bcdfgklmnprstvz]/.test(base.slice(-1))) { let r = tryLookup(base.slice(0, -1)); if (r) return r; }
+            let r = tryLookup(base + 'e'); if (r) return r;
+            r = tryLookup(base); if (r) return r;
+            if (word.endsWith('ied')) { r = tryLookup(word.slice(0, -3) + 'y'); if (r) return r; }
         }
-        
-        // -s/-es forms
         if (word.endsWith('s') && word.length > 2 && !word.endsWith('ss')) {
-            if (word.endsWith('ies') && word.length > 4) {
-                const result = tryLookup(word.slice(0, -3) + 'y');
-                if (result) return result;
-            }
-            // Try removing just -s FIRST (handles hope→hopes, care→cares,
-            // note→notes, tape→tapes, rate→rates, fire→fires, etc.)
-            const resultS = tryLookup(word.slice(0, -1));
-            if (resultS) return resultS;
-            // Then try removing -es (handles box→boxes, go→goes,
-            // watch→watches, bus→buses, potato→potatoes, etc.)
-            if (word.endsWith('es') && word.length > 3) {
-                let result = tryLookup(word.slice(0, -2));
-                if (result) return result;
-            }
+            if (word.endsWith('ies') && word.length > 4) { let r = tryLookup(word.slice(0, -3) + 'y'); if (r) return r; }
+            if (word.endsWith('es') && word.length > 3) { let r = tryLookup(word.slice(0, -2)); if (r) return r; }
+            let r = tryLookup(word.slice(0, -1)); if (r) return r;
         }
-        
-        // -er comparative / agent noun
         if (word.endsWith('er') && word.length > 3) {
             let base = word.slice(0, -2);
-            if (base.length >= 2) {
-                const lastTwo = base.slice(-2);
-                if (lastTwo[0] === lastTwo[1] && /[bcdfgklmnprstvz]/.test(lastTwo[0])) {
-                    const result = tryLookup(base.slice(0, -1));
-                    if (result) return result;
-                }
-            }
-            let result = tryLookup(base + 'e');
-            if (result) return result;
-            result = tryLookup(base);
-            if (result) return result;
-            if (word.endsWith('ier')) {
-                result = tryLookup(word.slice(0, -3) + 'y');
-                if (result) return result;
-            }
+            if (base.length >= 2 && base.slice(-2)[0] === base.slice(-2)[1] && /[bcdfgklmnprstvz]/.test(base.slice(-1))) { let r = tryLookup(base.slice(0, -1)); if (r) return r; }
+            let r = tryLookup(base + 'e'); if (r) return r;
+            r = tryLookup(base); if (r) return r;
+            if (word.endsWith('ier')) { r = tryLookup(word.slice(0, -3) + 'y'); if (r) return r; }
         }
-        
-        // -est superlative
         if (word.endsWith('est') && word.length > 4) {
             let base = word.slice(0, -3);
-            if (base.length >= 2) {
-                const lastTwo = base.slice(-2);
-                if (lastTwo[0] === lastTwo[1] && /[bcdfgklmnprstvz]/.test(lastTwo[0])) {
-                    const result = tryLookup(base.slice(0, -1));
-                    if (result) return result;
-                }
-            }
-            let result = tryLookup(base + 'e');
-            if (result) return result;
-            result = tryLookup(base);
-            if (result) return result;
-            if (word.endsWith('iest')) {
-                result = tryLookup(word.slice(0, -4) + 'y');
-                if (result) return result;
-            }
+            if (base.length >= 2 && base.slice(-2)[0] === base.slice(-2)[1] && /[bcdfgklmnprstvz]/.test(base.slice(-1))) { let r = tryLookup(base.slice(0, -1)); if (r) return r; }
+            let r = tryLookup(base + 'e'); if (r) return r;
+            r = tryLookup(base); if (r) return r;
+            if (word.endsWith('iest')) { r = tryLookup(word.slice(0, -4) + 'y'); if (r) return r; }
         }
-        
-        // -ly adverbs
         if (word.endsWith('ly') && word.length > 3) {
             let base = word.slice(0, -2);
-            let result = tryLookup(base);
-            if (result) return result;
-            if (word.endsWith('ily')) {
-                result = tryLookup(word.slice(0, -3) + 'y');
-                if (result) return result;
-            }
-            if (base.endsWith('l')) {
-                result = tryLookup(base + 'e');
-                if (result) return result;
-            }
-            result = tryLookup(base + 'e');
-            if (result) return result;
+            let r = tryLookup(base); if (r) return r;
+            if (word.endsWith('ily')) { r = tryLookup(word.slice(0, -3) + 'y'); if (r) return r; }
+            if (base.endsWith('l')) { r = tryLookup(base + 'e'); if (r) return r; }
+            r = tryLookup(base + 'e'); if (r) return r;
         }
-        
-        // -ness nouns
         if (word.endsWith('ness') && word.length > 5) {
-            let base = word.slice(0, -4);
-            let result = tryLookup(base);
-            if (result) return result;
-            if (word.endsWith('iness')) {
-                result = tryLookup(word.slice(0, -5) + 'y');
-                if (result) return result;
-            }
+            let r = tryLookup(word.slice(0, -4)); if (r) return r;
+            if (word.endsWith('iness')) { r = tryLookup(word.slice(0, -5) + 'y'); if (r) return r; }
         }
-        
-        // -ment nouns
         if (word.endsWith('ment') && word.length > 5) {
-            let base = word.slice(0, -4);
-            let result = tryLookup(base);
-            if (result) return result;
-            result = tryLookup(base + 'e');
-            if (result) return result;
+            let r = tryLookup(word.slice(0, -4)); if (r) return r;
+            r = tryLookup(word.slice(0, -4) + 'e'); if (r) return r;
         }
-        
-        // -tion/-sion nouns
         if ((word.endsWith('tion') || word.endsWith('sion')) && word.length > 5) {
             let base = word.slice(0, -4);
-            let result = tryLookup(base);
-            if (result) return result;
-            result = tryLookup(base + 'e');
-            if (result) return result;
+            let r = tryLookup(base); if (r) return r;
+            r = tryLookup(base + 'e'); if (r) return r;
             if (word.endsWith('ation') && word.length > 6) {
-                result = tryLookup(word.slice(0, -5) + 'e');
-                if (result) return result;
-                result = tryLookup(word.slice(0, -5));
-                if (result) return result;
+                r = tryLookup(word.slice(0, -5) + 'e'); if (r) return r;
+                r = tryLookup(word.slice(0, -5)); if (r) return r;
             }
         }
-        
-        // -able/-ible adjectives
         if ((word.endsWith('able') || word.endsWith('ible')) && word.length > 5) {
-            let base = word.slice(0, -4);
-            let result = tryLookup(base);
-            if (result) return result;
-            result = tryLookup(base + 'e');
-            if (result) return result;
+            let r = tryLookup(word.slice(0, -4)); if (r) return r;
+            r = tryLookup(word.slice(0, -4) + 'e'); if (r) return r;
         }
-        
-        // -ful adjectives
         if (word.endsWith('ful') && word.length > 4) {
-            let base = word.slice(0, -3);
-            let result = tryLookup(base);
-            if (result) return result;
-            result = tryLookup(base + 'y');
-            if (result) return result;
+            let r = tryLookup(word.slice(0, -3)); if (r) return r;
+            r = tryLookup(word.slice(0, -3) + 'y'); if (r) return r;
         }
-        
-        // -less adjectives
-        if (word.endsWith('less') && word.length > 5) {
-            let base = word.slice(0, -4);
-            let result = tryLookup(base);
-            if (result) return result;
-        }
-        
-        // -ous adjectives
+        if (word.endsWith('less') && word.length > 5) { let r = tryLookup(word.slice(0, -4)); if (r) return r; }
         if (word.endsWith('ous') && word.length > 4) {
-            let base = word.slice(0, -3);
-            let result = tryLookup(base + 'e');
-            if (result) return result;
-            result = tryLookup(base);
-            if (result) return result;
+            let r = tryLookup(word.slice(0, -3) + 'e'); if (r) return r;
+            r = tryLookup(word.slice(0, -3)); if (r) return r;
         }
-        
-        // -ive adjectives
         if (word.endsWith('ive') && word.length > 4) {
-            let base = word.slice(0, -3);
-            let result = tryLookup(base + 'e');
-            if (result) return result;
-            result = tryLookup(base);
-            if (result) return result;
+            let r = tryLookup(word.slice(0, -3) + 'e'); if (r) return r;
+            r = tryLookup(word.slice(0, -3)); if (r) return r;
         }
-        
-        // -ic adjectives (artistic -> art)
         if (word.endsWith('ic') && word.length > 3) {
-            let base = word.slice(0, -2);
-            let result = tryLookup(base);
-            if (result) return result;
-            // Also try without 'ist' for words like artistic
-            if (word.endsWith('istic')) {
-                result = tryLookup(word.slice(0, -5));
-                if (result) return result;
-            }
+            let r = tryLookup(word.slice(0, -2)); if (r) return r;
+            if (word.endsWith('istic')) { r = tryLookup(word.slice(0, -5)); if (r) return r; }
         }
-        
-        // -al adjectives
         if (word.endsWith('al') && word.length > 3) {
-            let base = word.slice(0, -2);
-            let result = tryLookup(base);
-            if (result) return result;
-            result = tryLookup(base + 'e');
-            if (result) return result;
+            let r = tryLookup(word.slice(0, -2)); if (r) return r;
+            r = tryLookup(word.slice(0, -2) + 'e'); if (r) return r;
         }
-        
         return { lemma: word, found: false, level: null };
     }
 
-    // ============================================================
-    // OFF-LIST WORD CLASSIFICATION
-    // ============================================================
-
-    function classifyOffListWord(word, originalWord, isAtSentenceStart, context = {}) {
-        const lower = word.toLowerCase();
-        const len = lower.length;
-        
-        const result = {
-            type: 'unknown',
-            difficultyWeight: 0,
-            reason: '',
-            isLiterary: false,
-            estimatedLevel: null
-        };
-        
-        // Email addresses and URLs
-        if (lower.includes('@') || lower.includes('.com') || lower.includes('.org') ||
-            lower.includes('.edu') || lower.includes('.hk') || lower.includes('www') ||
-            /^[a-z]+\.[a-z]+$/i.test(lower)) {
-            result.type = 'email_url';
-            result.difficultyWeight = 0;
-            result.reason = 'email/URL component';
-            return result;
-        }
-        
-        // Numbers
-        if (/^\d+$/.test(word) || /^\d+[\.,]\d+$/.test(word) || /^\d+(st|nd|rd|th)$/i.test(word)) {
-            result.type = 'number';
-            result.difficultyWeight = 0;
-            result.reason = 'numeric';
-            return result;
-        }
-        
-        // Very short words (likely function words or abbreviations)
-        if (len <= 2) {
-            result.type = 'abbreviation';
-            result.difficultyWeight = 0;
-            result.reason = 'very short';
-            return result;
-        }
-        
-        // Known proper nouns
-        if (PROPER_NOUNS.has(lower)) {
-            result.type = 'proper_noun';
-            result.difficultyWeight = 0;
-            result.reason = 'known name/place';
-            return result;
-        }
-        
-        // Capitalized word NOT at sentence start (likely proper noun)
-        if (/^[A-Z][a-z]+$/.test(originalWord) && !isAtSentenceStart) {
-            result.type = 'proper_noun';
-            result.difficultyWeight = 0;
-            result.reason = 'mid-sentence capitalized (likely name)';
-            return result;
-        }
-        
-        // All caps (acronym)
-        if (/^[A-Z]{2,}$/.test(originalWord)) {
-            result.type = 'acronym';
-            result.difficultyWeight = 0;
-            result.reason = 'acronym';
-            return result;
-        }
-        
-        // Title patterns
-        if (/^(mr|mrs|ms|dr|prof|st|mt)$/i.test(lower)) {
-            result.type = 'abbreviation';
-            result.difficultyWeight = 0;
-            result.reason = 'title abbreviation';
-            return result;
-        }
-        
-        // Literary vocabulary - check before general classification
-        if (LITERARY_VOCABULARY.has(lower)) {
-            result.type = 'literary';
-            result.difficultyWeight = 2.0;
-            result.reason = 'literary/evocative vocabulary';
-            result.isLiterary = true;
-            result.estimatedLevel = 'C1';
-            return result;
-        }
-        
-        // Hyphenated compounds
+    function classifyOffListWord(word, originalWord, isAtSentenceStart) {
+        const lower = word.toLowerCase(); const len = lower.length;
+        const result = { type: 'unknown', difficultyWeight: 0, reason: '', isLiterary: false, estimatedLevel: null };
+        if (lower.includes('@') || lower.includes('.com') || lower.includes('.org') || lower.includes('.edu') || lower.includes('.hk') || lower.includes('www') || /^[a-z]+\.[a-z]+$/i.test(lower)) { result.type = 'email_url'; return result; }
+        if (/^\d+$/.test(word) || /^\d+[\.,]\d+$/.test(word) || /^\d+(st|nd|rd|th)$/i.test(word)) { result.type = 'number'; return result; }
+        if (len <= 2) { result.type = 'abbreviation'; return result; }
+        if (PROPER_NOUNS.has(lower)) { result.type = 'proper_noun'; return result; }
+        if (/^[A-Z][a-z]+$/.test(originalWord) && !isAtSentenceStart) { result.type = 'proper_noun'; return result; }
+        if (/^[A-Z]{2,}$/.test(originalWord)) { result.type = 'acronym'; return result; }
+        if (/^(mr|mrs|ms|dr|prof|st|mt)$/i.test(lower)) { result.type = 'abbreviation'; return result; }
+        if (LITERARY_VOCABULARY.has(lower)) { result.type = 'literary'; result.difficultyWeight = 2.0; result.reason = 'literary/evocative vocabulary'; result.isLiterary = true; result.estimatedLevel = 'C1'; return result; }
         if (word.includes('-')) {
             const parts = word.split('-').filter(p => p.length > 0);
-            let knownCount = 0;
-            let maxLevel = 'A1';
-            const levelRank = { 'A1': 1, 'A2': 2, 'B1': 3, 'B2': 4, 'C1': 5, 'C2': 6 };
-
-            for (const part of parts) {
-                const lookup = lookupWord(part.toLowerCase());
-                if (lookup.found) {
-                    knownCount++;
-                    if (levelRank[lookup.level] > levelRank[maxLevel]) {
-                        maxLevel = lookup.level;
-                    }
-                }
-            }
-            
-            if (knownCount === parts.length) {
-                result.type = 'compound';
-                result.difficultyWeight = 0.3;
-                result.reason = 'compound of known words';
-                result.estimatedLevel = maxLevel;
-                return result;
-            } else if (knownCount > 0) {
-                result.type = 'compound_partial';
-                result.difficultyWeight = 0.5;
-                result.reason = 'compound (partially known)';
-                return result;
-            }
+            let knownCount = 0; let maxLevel = 'A1';
+            const lr = { 'A1': 1, 'A2': 2, 'B1': 3, 'B2': 4, 'C1': 5, 'C2': 6 };
+            for (const part of parts) { const l = lookupWord(part.toLowerCase()); if (l.found) { knownCount++; if (lr[l.level] > lr[maxLevel]) maxLevel = l.level; } }
+            if (knownCount === parts.length) { result.type = 'compound'; result.difficultyWeight = 0.3; result.estimatedLevel = maxLevel; return result; }
+            else if (knownCount > 0) { result.type = 'compound_partial'; result.difficultyWeight = 0.5; return result; }
         }
-        
-        // Simple, common-looking words that are probably easy
-        // Short words with common patterns are likely easy even if not in dictionary
-        if (len <= 5) {
-            result.type = 'simple_unknown';
-            result.difficultyWeight = 0.2;
-            result.reason = 'short word';
-            result.estimatedLevel = 'A2';
-            return result;
-        }
-        
-        if (len <= 7) {
-            result.type = 'moderate_unknown';
-            result.difficultyWeight = 0.4;
-            result.reason = 'medium-length word';
-            result.estimatedLevel = 'B1';
-            return result;
-        }
-        
-        // Check for advanced suffixes suggesting higher difficulty
-        const advancedSuffixes = ['ization', 'isation', 'ification', 'ology', 'ological', 'istically'];
-        for (const suffix of advancedSuffixes) {
-            if (lower.endsWith(suffix)) {
-                result.type = 'advanced';
-                result.difficultyWeight = 1.5;
-                result.reason = `formal suffix (-${suffix})`;
-                result.estimatedLevel = 'C1';
-                return result;
-            }
-        }
-        
-        const moderateSuffixes = ['ment', 'tion', 'sion', 'ance', 'ence', 'ity', 'ness', 'ious', 'eous'];
-        for (const suffix of moderateSuffixes) {
-            if (lower.endsWith(suffix) && len > suffix.length + 3) {
-                result.type = 'moderate_advanced';
-                result.difficultyWeight = 0.7;
-                result.reason = `academic suffix (-${suffix})`;
-                result.estimatedLevel = 'B2';
-                return result;
-            }
-        }
-        
-        // Length-based classification for remaining words
-        if (len >= 12) {
-            result.type = 'advanced';
-            result.difficultyWeight = 1.2;
-            result.reason = 'very long word';
-            result.estimatedLevel = 'C1';
-        } else if (len >= 10) {
-            result.type = 'advanced';
-            result.difficultyWeight = 0.9;
-            result.reason = 'long word';
-            result.estimatedLevel = 'B2';
-        } else if (len >= 8) {
-            result.type = 'moderate';
-            result.difficultyWeight = 0.6;
-            result.reason = 'moderately long';
-            result.estimatedLevel = 'B1';
-        } else {
-            result.type = 'simple';
-            result.difficultyWeight = 0.3;
-            result.reason = 'standard unknown';
-            result.estimatedLevel = 'B1';
-        }
-        
+        if (len <= 5) { result.type = 'simple_unknown'; result.difficultyWeight = 0.2; result.estimatedLevel = 'A2'; return result; }
+        if (len <= 7) { result.type = 'moderate_unknown'; result.difficultyWeight = 0.4; result.estimatedLevel = 'B1'; return result; }
+        for (const suffix of ['ization', 'isation', 'ification', 'ology', 'ological', 'istically']) { if (lower.endsWith(suffix)) { result.type = 'advanced'; result.difficultyWeight = 1.5; result.estimatedLevel = 'C1'; return result; } }
+        for (const suffix of ['ment', 'tion', 'sion', 'ance', 'ence', 'ity', 'ness', 'ious', 'eous']) { if (lower.endsWith(suffix) && len > suffix.length + 3) { result.type = 'moderate_advanced'; result.difficultyWeight = 0.7; result.estimatedLevel = 'B2'; return result; } }
+        if (len >= 12) { result.difficultyWeight = 1.2; result.estimatedLevel = 'C1'; }
+        else if (len >= 10) { result.difficultyWeight = 0.9; result.estimatedLevel = 'B2'; }
+        else if (len >= 8) { result.difficultyWeight = 0.6; result.estimatedLevel = 'B1'; }
+        else { result.difficultyWeight = 0.3; result.estimatedLevel = 'B1'; }
         return result;
     }
 
-    // ============================================================
-    // TEXT STYLE ANALYSIS
-    // ============================================================
-
     function analyzeTextStyle(text) {
-        const style = {
-            idiomCount: 0,
-            idiomWeight: 0,
-            idiomDetails: [],
-            figurativeCount: 0,
-            figurativeWeight: 0,
-            syntaxComplexity: 0,
-            dialoguePresent: false,
-            narrativeMarkers: 0,
-            isLiterary: false,
-            isAcademic: false,
-            isSimple: false
-        };
-        
-        // Check for idioms
-        for (const idiom of IDIOM_PATTERNS) {
-            const matches = text.match(idiom.pattern);
-            if (matches) {
-                style.idiomCount += matches.length;
-                style.idiomWeight += idiom.weight * matches.length;
-                style.idiomDetails.push({
-                    pattern: idiom.pattern.source,
-                    level: idiom.level,
-                    count: matches.length
-                });
-            }
-        }
-        
-        // Check for figurative language
-        for (const fig of FIGURATIVE_PATTERNS) {
-            const matches = text.match(fig.pattern);
-            if (matches) {
-                style.figurativeCount += matches.length;
-                style.figurativeWeight += fig.weight * matches.length;
-            }
-        }
-        
-        // Check for complex syntax
-        for (const syntax of COMPLEX_SYNTAX_PATTERNS) {
-            const matches = text.match(syntax.pattern);
-            if (matches) {
-                style.syntaxComplexity += syntax.weight * matches.length;
-            }
-        }
-        
-        // Check for dialogue
-        const dialogueMatches = text.match(/"[^"]+"/g) || [];
-        const singleQuoteDialogue = text.match(/'[^']+'/g) || [];
-        style.dialoguePresent = dialogueMatches.length > 2 || singleQuoteDialogue.length > 2;
-        
-        // Narrative markers
-        const narrativePatterns = [
-            /\bI (remember|recall|think back|grew up|was|had|felt|knew|saw|heard)\b/gi,
-            /\bmy (mother|father|mom|dad|parents|brother|sister|family)\b/gi,
-            /\blooking back\b/gi,
-            /\bas a (child|kid|girl|boy)\b/gi,
-            /\bgrowing up\b/gi
-        ];
-        
-        for (const pattern of narrativePatterns) {
-            const matches = text.match(pattern);
-            if (matches) style.narrativeMarkers += matches.length;
-        }
-        
-        // Academic markers
-        const academicPatterns = [
-            /\baccording to\b/gi,
-            /\bthe (fact|reality|truth) (is|was) that\b/gi,
-            /\bin (fact|addition|conclusion|contrast)\b/gi,
-            /\bfor (example|instance)\b/gi,
-            /\bthis (means|suggests|indicates|shows)\b/gi,
-            /\bas a result\b/gi,
-            /\bhowever,\b/gi,
-            /\btherefore,?\b/gi
-        ];
-        
-        let academicMarkerCount = 0;
-        for (const pattern of academicPatterns) {
-            const matches = text.match(pattern);
-            if (matches) academicMarkerCount += matches.length;
-        }
-        
-        // Simple text markers (announcements, notices, instructions)
-        const simplePatterns = [
-            /\byou can\b/gi,
-            /\bplease\b/gi,
-            /\bcontact\b/gi,
-            /\bquestions?\b/gi,
-            /\bcome and\b/gi,
-            /\bnow is the time\b/gi,
-            /\blet us know\b/gi
-        ];
-        
-        let simpleMarkerCount = 0;
-        for (const pattern of simplePatterns) {
-            const matches = text.match(pattern);
-            if (matches) simpleMarkerCount += matches.length;
-        }
-        
-        const wordCount = text.split(/\s+/).length;
-        const idiomDensity = (style.idiomCount / wordCount) * 1000;
-        const figurativeDensity = (style.figurativeCount / wordCount) * 1000;
-        const narrativeDensity = (style.narrativeMarkers / wordCount) * 1000;
-        const academicDensity = (academicMarkerCount / wordCount) * 1000;
-        const simpleDensity = (simpleMarkerCount / wordCount) * 1000;
-        
-        style.isLiterary = (
-            idiomDensity > 3 || 
-            figurativeDensity > 2 || 
-            narrativeDensity > 5 ||
-            (style.dialoguePresent && narrativeDensity > 2) ||
-            style.syntaxComplexity > 5
-        );
-        
-        style.isAcademic = academicDensity > 5 && !style.isLiterary;
-        style.isSimple = simpleDensity > 20 && !style.isLiterary && !style.isAcademic;
-        
+        const style = { idiomCount: 0, idiomWeight: 0, idiomDetails: [], figurativeCount: 0, figurativeWeight: 0, syntaxComplexity: 0, dialoguePresent: false, narrativeMarkers: 0, isLiterary: false, isAcademic: false, isSimple: false };
+        for (const idiom of IDIOM_PATTERNS) { const m = text.match(idiom.pattern); if (m) { style.idiomCount += m.length; style.idiomWeight += idiom.weight * m.length; style.idiomDetails.push({ pattern: idiom.pattern.source, level: idiom.level, count: m.length }); } }
+        for (const fig of FIGURATIVE_PATTERNS) { const m = text.match(fig.pattern); if (m) { style.figurativeCount += m.length; style.figurativeWeight += fig.weight * m.length; } }
+        for (const syntax of COMPLEX_SYNTAX_PATTERNS) { const m = text.match(syntax.pattern); if (m) { style.syntaxComplexity += syntax.weight * m.length; } }
+        style.dialoguePresent = (text.match(/"[^"]+"/g) || []).length > 2 || (text.match(/'[^']+'/g) || []).length > 2;
+        for (const p of [/\bI (remember|recall|think back|grew up|was|had|felt|knew|saw|heard)\b/gi, /\bmy (mother|father|mom|dad|parents|brother|sister|family)\b/gi, /\blooking back\b/gi, /\bas a (child|kid|girl|boy)\b/gi, /\bgrowing up\b/gi]) { const m = text.match(p); if (m) style.narrativeMarkers += m.length; }
+        let ac = 0; for (const p of [/\baccording to\b/gi, /\bthe (fact|reality|truth) (is|was) that\b/gi, /\bin (fact|addition|conclusion|contrast)\b/gi, /\bfor (example|instance)\b/gi, /\bthis (means|suggests|indicates|shows)\b/gi, /\bas a result\b/gi, /\bhowever,\b/gi, /\btherefore,?\b/gi]) { const m = text.match(p); if (m) ac += m.length; }
+        let sc = 0; for (const p of [/\byou can\b/gi, /\bplease\b/gi, /\bcontact\b/gi, /\bquestions?\b/gi, /\bcome and\b/gi, /\bnow is the time\b/gi, /\blet us know\b/gi]) { const m = text.match(p); if (m) sc += m.length; }
+        const wc = text.split(/\s+/).length;
+        style.isLiterary = ((style.idiomCount/wc)*1000 > 3 || (style.figurativeCount/wc)*1000 > 2 || (style.narrativeMarkers/wc)*1000 > 5 || (style.dialoguePresent && (style.narrativeMarkers/wc)*1000 > 2) || style.syntaxComplexity > 5);
+        style.isAcademic = (ac/wc)*1000 > 5 && !style.isLiterary;
+        style.isSimple = (sc/wc)*1000 > 20 && !style.isLiterary && !style.isAcademic;
         return style;
     }
-
-    // ============================================================
-    // UI UTILITIES
-    // ============================================================
 
     function showAlert(message) {
         const modal = document.createElement('div');
         modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000;';
-        modal.innerHTML = `
-            <div style="background:white;padding:24px;border-radius:12px;max-width:320px;width:90%;text-align:center;box-shadow:0 20px 25px -5px rgba(0,0,0,0.1);">
-                <p style="margin:0 0 20px;color:#374151;font-size:1rem;">${message}</p>
-                <button style="background:var(--primary);color:white;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-weight:600;" onclick="this.closest('div').parentElement.remove()">OK</button>
-            </div>
-        `;
+        modal.innerHTML = `<div style="background:white;padding:24px;border-radius:12px;max-width:320px;width:90%;text-align:center;box-shadow:0 20px 25px -5px rgba(0,0,0,0.1);"><p style="margin:0 0 20px;color:#374151;font-size:1rem;">${message}</p><button style="background:var(--primary);color:white;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-weight:600;" onclick="this.closest('div').parentElement.remove()">OK</button></div>`;
         document.body.appendChild(modal);
     }
+
+    // ============================================================
+    // SQUARIFIED TREEMAP LAYOUT ENGINE
+    // ============================================================
+
+    function treemapLayout(data, rect) {
+        const items = data.filter(d => d.value > 0);
+        if (items.length === 0) return [];
+        const totalValue = items.reduce((sum, d) => sum + d.value, 0);
+        const containerArea = rect.w * rect.h;
+        const normalized = items.map(d => ({
+            ...d, area: (d.value / totalValue) * containerArea
+        })).sort((a, b) => b.area - a.area);
+        const result = [];
+        squarifyHelper(normalized, { ...rect }, result);
+        return result;
+    }
+
+    function squarifyHelper(items, rect, result) {
+        if (items.length === 0 || rect.w <= 0 || rect.h <= 0) return;
+        if (items.length === 1) {
+            result.push({ ...items[0], x: rect.x, y: rect.y, w: rect.w, h: rect.h });
+            return;
+        }
+        const shortSide = Math.min(rect.w, rect.h);
+        let row = [items[0]]; let bestWorst = worstAR(row, shortSide);
+        for (let i = 1; i < items.length; i++) {
+            const testRow = [...row, items[i]];
+            const testWorst = worstAR(testRow, shortSide);
+            if (testWorst <= bestWorst) { row = testRow; bestWorst = testWorst; } else break;
+        }
+        const remaining = items.slice(row.length);
+        const rowArea = row.reduce((s, d) => s + d.area, 0);
+        if (rect.w >= rect.h) {
+            const rowWidth = rowArea / rect.h; let y = rect.y;
+            for (const item of row) { const h = item.area / rowWidth; result.push({ ...item, x: rect.x, y, w: rowWidth, h }); y += h; }
+            squarifyHelper(remaining, { x: rect.x + rowWidth, y: rect.y, w: rect.w - rowWidth, h: rect.h }, result);
+        } else {
+            const rowHeight = rowArea / rect.w; let x = rect.x;
+            for (const item of row) { const w = item.area / rowHeight; result.push({ ...item, x, y: rect.y, w, h: rowHeight }); x += w; }
+            squarifyHelper(remaining, { x: rect.x, y: rect.y + rowHeight, w: rect.w, h: rect.h - rowHeight }, result);
+        }
+    }
+
+    function worstAR(row, sideLength) {
+        const total = row.reduce((s, d) => s + d.area, 0); let worst = 0;
+        for (const item of row) { const r = (sideLength * sideLength * item.area) / (total * total); worst = Math.max(worst, Math.max(r, 1 / r)); }
+        return worst;
+    }
+
+    // ============================================================
+    // TREEMAP RENDERING — CEFR left, Off List right
+    // ============================================================
+
+    let lastTreemapCounts = null;
+
+    function renderTreemap(counts) {
+        const container = document.getElementById('treemap-container');
+        container.innerHTML = '';
+        const total = counts.Total || 1;
+        const calcPct = v => ((v / total) * 100).toFixed(1);
+
+        const cefrItems = [
+            { label: 'A1', value: counts.A1, bg: '#d1fae5', text: '#065f46' },
+            { label: 'A2', value: counts.A2, bg: '#a7f3d0', text: '#064e3b' },
+            { label: 'B1', value: counts.B1, bg: '#fef3c7', text: '#92400e' },
+            { label: 'B2', value: counts.B2, bg: '#fde68a', text: '#78350f' },
+            { label: 'C1', value: counts.C1, bg: '#fca5a5', text: '#7f1d1d' },
+            { label: 'C2', value: counts.C2, bg: '#d8b4fe', text: '#3b0764' }
+        ];
+        const offItem = { label: 'Off List', value: counts.Off, bg: '#e5e7eb', text: '#6b7280' };
+
+        const cW = container.offsetWidth;
+        const cH = container.offsetHeight;
+        if (cW === 0 || cH === 0) return;
+
+        const cefrTotal = cefrItems.reduce((s, d) => s + d.value, 0);
+        const grandTotal = cefrTotal + offItem.value;
+        if (grandTotal === 0) return;
+
+        let allCells = [];
+
+        if (cefrTotal > 0 && offItem.value > 0) {
+            // CEFR levels on the left, Off List on the right
+            const cefrWidth = Math.round((cefrTotal / grandTotal) * cW);
+            const offWidth = cW - cefrWidth;
+            allCells = treemapLayout(cefrItems, { x: 0, y: 0, w: cefrWidth, h: cH });
+            allCells.push({ ...offItem, x: cefrWidth, y: 0, w: offWidth, h: cH });
+        } else if (cefrTotal > 0) {
+            allCells = treemapLayout(cefrItems, { x: 0, y: 0, w: cW, h: cH });
+        } else {
+            allCells.push({ ...offItem, x: 0, y: 0, w: cW, h: cH });
+        }
+
+        const tooltip = document.getElementById('treemap-tooltip');
+
+        allCells.forEach((cell, idx) => {
+            if (!cell.value || cell.value <= 0) return;
+            const pct = calcPct(cell.value);
+            const div = document.createElement('div');
+            div.className = 'treemap-cell';
+            div.style.left   = cell.x + 'px';
+            div.style.top    = cell.y + 'px';
+            div.style.width  = cell.w + 'px';
+            div.style.height = cell.h + 'px';
+            div.style.backgroundColor = cell.bg;
+            div.style.color  = cell.text;
+            div.style.animationDelay = (idx * 55) + 'ms';
+
+            const minDim = Math.min(cell.w, cell.h);
+            const area   = cell.w * cell.h;
+            let sizeClass = 'size-lg';
+            if      (minDim < 22 || area < 700)   sizeClass = 'size-dot';
+            else if (minDim < 32 || area < 1500)   sizeClass = 'size-xxs';
+            else if (minDim < 46 || area < 3200)   sizeClass = 'size-xs';
+            else if (minDim < 62 || area < 5500)   sizeClass = 'size-sm';
+            else if (minDim < 90 || area < 12000)  sizeClass = 'size-md';
+            div.classList.add(sizeClass);
+
+            div.innerHTML = `
+                <span class="treemap-cell-level">${cell.label}</span>
+                <span class="treemap-cell-count">${cell.value}</span>
+                <span class="treemap-cell-percent">${pct}%</span>
+            `;
+
+            div.addEventListener('mouseenter', () => {
+                tooltip.textContent = `${cell.label}: ${cell.value} words (${pct}%)`;
+                tooltip.classList.add('visible');
+            });
+            div.addEventListener('mousemove', e => {
+                tooltip.style.left = (e.clientX + 14) + 'px';
+                tooltip.style.top  = (e.clientY - 36) + 'px';
+            });
+            div.addEventListener('mouseleave', () => tooltip.classList.remove('visible'));
+
+            container.appendChild(div);
+        });
+    }
+
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => { if (lastTreemapCounts) renderTreemap(lastTreemapCounts); }, 200);
+    });
 
     // ============================================================
     // MAIN ANALYSIS ENGINE
@@ -1412,702 +1090,182 @@
 
         const outputDiv = document.getElementById('highlighted-content');
         outputDiv.innerHTML = '';
-        
         const counts = { A1: 0, A2: 0, B1: 0, B2: 0, C1: 0, C2: 0, Off: 0, Total: 0 };
         const levelWeights = { A1: 1, A2: 2, B1: 3, B2: 4, C1: 5, C2: 6 };
-
-        let weightedSum = 0;
-        let totalWordLength = 0;
-        let longWords = 0;
-        const uniqueWords = new Set();
-        const uniqueLemmas = new Set();
-        const offListAnalysis = [];
-        const advancedWordsFound = [];
+        let weightedSum = 0, totalWordLength = 0, longWords = 0;
+        const uniqueWords = new Set(), uniqueLemmas = new Set();
+        const offListAnalysis = [], advancedWordsFound = [];
         let literaryOffListCount = 0;
         const wordsByLevel = { B1: new Map(), B2: new Map(), C1: new Map(), C2: new Map() };
-        
         const textStyle = analyzeTextStyle(text);
-        
         const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
         const sentenceCount = Math.max(sentences.length, 1);
-        
-        // ---- Improved sentence complexity calculation ----
         let complexSentences = 0;
         sentences.forEach(sent => {
             const words = sent.split(/\s+/).filter(w => w.length > 0);
-            const hasSubordination = /\b(because|although|while|when|if|unless|since|whereas|despite|unless|whether|even though|in order to|so that)\b/i.test(sent);
-            const hasRelativeClause = /\b(who|which|whom|whose)\b/i.test(sent);
-            const hasDashes = sent.includes('–') || sent.includes('—');
-            const hasParticipial = /(?:^|[,;])\s*\w+ing\b/i.test(sent.trim());
-            const hasPassive = /\b(was|were|been|being|is|are)\s+\w+ed\b/i.test(sent);
-            const hasMultipleConjunctions = (sent.match(/\b(and|but|or|yet|so|because|although|while|when|if|unless|since|whereas|whether)\b/gi) || []).length >= 3;
-
-            let complexityIndicators = 0;
-            if (words.length > 20) complexityIndicators += 2;
-            else if (words.length > 14) complexityIndicators += 1;
-            if (hasSubordination) complexityIndicators += 1;
-            if (hasRelativeClause) complexityIndicators += 1;
-            if (hasDashes) complexityIndicators += 1;
-            if (hasParticipial) complexityIndicators += 1;
-            if (hasPassive) complexityIndicators += 0.5;
-            if (hasMultipleConjunctions) complexityIndicators += 1;
-
-            if (complexityIndicators >= 2) {
-                complexSentences++;
-            }
+            let ci = 0;
+            if (words.length > 20) ci += 2; else if (words.length > 14) ci += 1;
+            if (/\b(because|although|while|when|if|unless|since|whereas|despite|whether|even though|in order to|so that)\b/i.test(sent)) ci += 1;
+            if (/\b(who|which|whom|whose)\b/i.test(sent)) ci += 1;
+            if (sent.includes('–') || sent.includes('—')) ci += 1;
+            if (/(?:^|[,;])\s*\w+ing\b/i.test(sent.trim())) ci += 1;
+            if (/\b(was|were|been|being|is|are)\s+\w+ed\b/i.test(sent)) ci += 0.5;
+            if ((sent.match(/\b(and|but|or|yet|so|because|although|while|when|if|unless|since|whereas|whether)\b/gi) || []).length >= 3) ci += 1;
+            if (ci >= 2) complexSentences++;
         });
-        
+
         let isAfterSentenceEnd = true;
-        const tokens = text.split(/([a-zA-Z0-9''-]+)/);
-        
-        tokens.forEach((token) => {
-            if (!/[a-zA-Z0-9]/.test(token)) {
-                outputDiv.appendChild(document.createTextNode(token));
-                if (/[.!?]/.test(token)) isAfterSentenceEnd = true;
-                return;
-            }
-
-            // Skip email/URL components entirely
-            if (token.includes('@') || /\.(com|org|edu|hk|uk|net)$/i.test(token) ||
-                token === 'www' || /^[a-z]\.[a-z]+$/i.test(token)) {
-                outputDiv.appendChild(document.createTextNode(token));
-                return;
-            }
-
+        text.split(/([a-zA-Z0-9''-]+)/).forEach(token => {
+            if (!/[a-zA-Z0-9]/.test(token)) { outputDiv.appendChild(document.createTextNode(token)); if (/[.!?]/.test(token)) isAfterSentenceEnd = true; return; }
+            if (token.includes('@') || /\.(com|org|edu|hk|uk|net)$/i.test(token) || token === 'www' || /^[a-z]\.[a-z]+$/i.test(token)) { outputDiv.appendChild(document.createTextNode(token)); return; }
             counts.Total++;
             const cleanToken = token.toLowerCase().replace(/['''-]/g, '');
-            totalWordLength += cleanToken.length;
-            uniqueWords.add(cleanToken);
+            totalWordLength += cleanToken.length; uniqueWords.add(cleanToken);
             if (cleanToken.length >= 8) longWords++;
-
-            const lemmaResult = lemmatize(token);
-            uniqueLemmas.add(lemmaResult.lemma);
-
-            const span = document.createElement('span');
-            span.textContent = token;
-            span.classList.add('cefr-word');
-
+            const lemmaResult = lemmatize(token); uniqueLemmas.add(lemmaResult.lemma);
+            const span = document.createElement('span'); span.textContent = token; span.classList.add('cefr-word');
             if (lemmaResult.found && lemmaResult.level) {
                 const level = lemmaResult.level.substring(0, 2).toUpperCase();
-                if (['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].includes(level)) {
-                    span.classList.add(`level-${level}`);
-                    span.setAttribute('data-info', `${lemmaResult.lemma} (${level})`);
-                    counts[level]++;
-                    weightedSum += levelWeights[level];
-
-                    if (['B1', 'B2', 'C1', 'C2'].includes(level)) {
-                        const lemmaKey = lemmaResult.lemma.toLowerCase();
-                        if (!wordsByLevel[level].has(lemmaKey)) {
-                            const posInfo = dictionary.get(lemmaKey);
-                            const pos = posInfo ? posInfo.pos : '';
-                            wordsByLevel[level].set(lemmaKey, { word: lemmaResult.lemma, pos: pos });
-                        }
-                    }
-
-                    if (level === 'B2' || level === 'C1' || level === 'C2') {
-                        advancedWordsFound.push({ word: token, lemma: lemmaResult.lemma, level: level });
-                    }
-                } else {
-                    span.classList.add('level-XX');
-                    counts.Off++;
-                    const classification = classifyOffListWord(cleanToken, token, isAfterSentenceEnd);
-                    classification.word = token;
-                    classification.lemma = lemmaResult.lemma;
-                    offListAnalysis.push(classification);
-                    if (classification.isLiterary) literaryOffListCount++;
-                }
-            } else {
-                span.classList.add('level-XX');
-                counts.Off++;
-                const classification = classifyOffListWord(cleanToken, token, isAfterSentenceEnd);
-                classification.word = token;
-                classification.lemma = lemmaResult.lemma;
-                offListAnalysis.push(classification);
-                if (classification.isLiterary) literaryOffListCount++;
-            }
-
-            outputDiv.appendChild(span);
-            isAfterSentenceEnd = false;
+                if (['A1','A2','B1','B2','C1','C2'].includes(level)) {
+                    span.classList.add(`level-${level}`); span.setAttribute('data-info', `${lemmaResult.lemma} (${level})`);
+                    counts[level]++; weightedSum += levelWeights[level];
+                    if (['B1','B2','C1','C2'].includes(level)) { const lk = lemmaResult.lemma.toLowerCase(); if (!wordsByLevel[level].has(lk)) { const pi = dictionary.get(lk); wordsByLevel[level].set(lk, { word: lemmaResult.lemma, pos: pi ? pi.pos : '' }); } }
+                    if (['B2','C1','C2'].includes(level)) advancedWordsFound.push({ word: token, lemma: lemmaResult.lemma, level });
+                } else { span.classList.add('level-XX'); counts.Off++; const c = classifyOffListWord(cleanToken, token, isAfterSentenceEnd); c.word = token; c.lemma = lemmaResult.lemma; offListAnalysis.push(c); if (c.isLiterary) literaryOffListCount++; }
+            } else { span.classList.add('level-XX'); counts.Off++; const c = classifyOffListWord(cleanToken, token, isAfterSentenceEnd); c.word = token; c.lemma = lemmaResult.lemma; offListAnalysis.push(c); if (c.isLiterary) literaryOffListCount++; }
+            outputDiv.appendChild(span); isAfterSentenceEnd = false;
         });
 
-        let offListDifficultySum = 0;
-        let neutralOffList = 0;
-        let advancedOffList = 0;
-        
-        offListAnalysis.forEach(item => {
-            offListDifficultySum += item.difficultyWeight;
-            if (item.difficultyWeight <= 0.3) neutralOffList++;
-            else if (item.difficultyWeight >= 1.0) advancedOffList++;
-        });
+        let offListDifficultySum = 0, neutralOffList = 0, advancedOffList = 0;
+        offListAnalysis.forEach(item => { offListDifficultySum += item.difficultyWeight; if (item.difficultyWeight <= 0.3) neutralOffList++; else if (item.difficultyWeight >= 1.0) advancedOffList++; });
 
-        analysisData = {
-            counts: counts,
-            weightedSum: weightedSum,
-            offListDifficultySum: offListDifficultySum,
-            offListAnalysis: offListAnalysis,
-            neutralOffList: neutralOffList,
-            advancedOffList: advancedOffList,
-            advancedWordsFound: advancedWordsFound,
-            literaryOffListCount: literaryOffListCount,
-            textStyle: textStyle,
-            wordsByLevel: wordsByLevel,
-            metrics: {
-                totalWords: counts.Total,
-                uniqueWords: uniqueWords.size,
-                uniqueLemmas: uniqueLemmas.size,
-                avgWordLength: totalWordLength / Math.max(counts.Total, 1),
-                longWordRatio: longWords / Math.max(counts.Total, 1),
-                sentenceCount: sentenceCount,
-                avgSentenceLength: counts.Total / sentenceCount,
-                lexicalDiversity: uniqueWords.size / Math.max(counts.Total, 1),
-                complexSentenceRatio: complexSentences / sentenceCount
-            }
+        analysisData = { counts, weightedSum, offListDifficultySum, offListAnalysis, neutralOffList, advancedOffList, advancedWordsFound, literaryOffListCount, textStyle, wordsByLevel,
+            metrics: { totalWords: counts.Total, uniqueWords: uniqueWords.size, uniqueLemmas: uniqueLemmas.size, avgWordLength: totalWordLength / Math.max(counts.Total, 1), longWordRatio: longWords / Math.max(counts.Total, 1), sentenceCount, avgSentenceLength: counts.Total / sentenceCount, lexicalDiversity: uniqueWords.size / Math.max(counts.Total, 1), complexSentenceRatio: complexSentences / sentenceCount }
         };
 
+        document.getElementById('output-area').style.display = 'block';
+        void document.getElementById('treemap-container').offsetWidth;
         updateStats(counts);
         determineVerdict();
         buildWordLists(wordsByLevel);
-        document.getElementById('output-area').style.display = 'block';
         document.getElementById('output-area').scrollIntoView({behavior: 'smooth'});
     }
 
     function updateStats(counts) {
-        const total = counts.Total || 1;
-        const calcPercent = (val) => ((val / total) * 100).toFixed(1) + '%';
         document.getElementById('count-total').textContent = counts.Total;
-        document.getElementById('count-a1').textContent = counts.A1;
-        document.getElementById('count-a2').textContent = counts.A2;
-        document.getElementById('count-b1').textContent = counts.B1;
-        document.getElementById('count-b2').textContent = counts.B2;
-        document.getElementById('count-c1').textContent = counts.C1;
-        document.getElementById('count-c2').textContent = counts.C2;
-        document.getElementById('count-off').textContent = counts.Off;
-        document.getElementById('percent-a1').textContent = '(' + calcPercent(counts.A1) + ')';
-        document.getElementById('percent-a2').textContent = '(' + calcPercent(counts.A2) + ')';
-        document.getElementById('percent-b1').textContent = '(' + calcPercent(counts.B1) + ')';
-        document.getElementById('percent-b2').textContent = '(' + calcPercent(counts.B2) + ')';
-        document.getElementById('percent-c1').textContent = '(' + calcPercent(counts.C1) + ')';
-        document.getElementById('percent-c2').textContent = '(' + calcPercent(counts.C2) + ')';
-        document.getElementById('percent-off').textContent = '(' + calcPercent(counts.Off) + ')';
+        lastTreemapCounts = counts;
+        renderTreemap(counts);
     }
-
-    // ============================================================
-    // CEFR LEVEL DETERMINATION — IMPROVED MULTI-FACTOR ANALYSIS
-    // ============================================================
-    //
-    // Key design changes from the original logic:
-    //
-    // 1. B2 vocabulary is NO LONGER lumped with C1/C2 as "advanced."
-    //    B2 words are expected in B2 texts; only C1+C2 words (pAdvanced)
-    //    are treated as the primary discriminator for the C1/C2 boundary.
-    //
-    // 2. An "effective advanced %" compensates for advanced words that
-    //    are missing from the word list by adding literary off-list and
-    //    half-weighted difficult off-list words.
-    //
-    // 3. A 95th-percentile coverage level is calculated: what CEFR level
-    //    must a reader know to understand 95% of the on-list words?
-    //
-    // 4. Sentence complexity and style complexity are scored as separate
-    //    dimensions (0–5 each) and used as supporting evidence that can
-    //    push a borderline text up or confirm a level.
-    //
-    // 5. Unique word-type counts (breadth) matter: five different C1
-    //    words are more diagnostic than one C1 word repeated five times.
-    //
-    // 6. Sanity-check overrides prevent impossible ratings (e.g. C1
-    //    with zero C1/C2 vocabulary and no compensating complexity).
-    //
-    // ============================================================
 
     function determineVerdict() {
-        const { counts, weightedSum, offListDifficultySum, metrics,
-                neutralOffList, advancedOffList, advancedWordsFound,
-                offListAnalysis, textStyle, literaryOffListCount, wordsByLevel } = analysisData;
-
+        const { counts, weightedSum, offListDifficultySum, metrics, neutralOffList, advancedOffList, advancedWordsFound, offListAnalysis, textStyle, literaryOffListCount, wordsByLevel } = analysisData;
         if (counts.Total === 0) return;
-
-        const total = counts.Total;
-        const onListWords = total - counts.Off;
-
-        // ========================================
-        // STEP 1 — Core percentage metrics
-        // ========================================
-
-        const pA1 = (counts.A1 / total) * 100;
-        const pA2 = (counts.A2 / total) * 100;
-        const pB1 = (counts.B1 / total) * 100;
-        const pB2 = (counts.B2 / total) * 100;
-        const pC1 = (counts.C1 / total) * 100;
-        const pC2 = (counts.C2 / total) * 100;
-        const pOff = (counts.Off / total) * 100;
-
-        const pBasic    = pA1 + pA2;            // A1 + A2
-        const pAdvanced = pC1 + pC2;            // C1 + C2 only (key discriminator)
-        const pB2Plus   = pB2 + pC1 + pC2;      // B2 + C1 + C2
-        const pB1Plus   = pB1 + pB2 + pC1 + pC2;
-
+        const total = counts.Total, onListWords = total - counts.Off;
+        const pA1 = (counts.A1/total)*100, pA2 = (counts.A2/total)*100, pB1 = (counts.B1/total)*100, pB2 = (counts.B2/total)*100, pC1 = (counts.C1/total)*100, pC2 = (counts.C2/total)*100;
+        const pBasic = pA1+pA2, pAdvanced = pC1+pC2, pB2Plus = pB2+pC1+pC2, pB1Plus = pB1+pB2+pC1+pC2;
         const avgDifficulty = onListWords > 0 ? weightedSum / onListWords : 1;
-
-        // ========================================
-        // STEP 2 — Unique word-type counts
-        // ========================================
-
-        const uniqueB2       = wordsByLevel.B2 ? wordsByLevel.B2.size : 0;
-        const uniqueC1       = wordsByLevel.C1 ? wordsByLevel.C1.size : 0;
-        const uniqueC2       = wordsByLevel.C2 ? wordsByLevel.C2.size : 0;
-        const uniqueAdvanced = uniqueC1 + uniqueC2;
-
-        // ========================================
-        // STEP 3 — Effective advanced vocabulary
-        //          (compensates for words missing from word list)
-        // ========================================
-
+        const uniqueB2 = wordsByLevel.B2 ? wordsByLevel.B2.size : 0, uniqueC1 = wordsByLevel.C1 ? wordsByLevel.C1.size : 0, uniqueC2 = wordsByLevel.C2 ? wordsByLevel.C2.size : 0, uniqueAdvanced = uniqueC1 + uniqueC2;
         const difficultOffList = offListAnalysis.filter(i => i.difficultyWeight >= 1.0);
-        const literaryPct      = (literaryOffListCount / total) * 100;
-        const difficultOffPct  = (difficultOffList.length / total) * 100;
-        const effectiveAdvancedPct = pAdvanced + literaryPct + difficultOffPct * 0.5;
-
-        // ========================================
-        // STEP 4 — 95th-percentile coverage level
-        // ========================================
-
-        let cumulative = 0;
-        let p95Level   = 'C2';
-        const threshold95 = onListWords * 0.95;
-        for (const lev of ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']) {
-            cumulative += counts[lev];
-            if (cumulative >= threshold95 && p95Level === 'C2') {
-                p95Level = lev;
-            }
-        }
-
-        // ========================================
-        // STEP 5 — Sentence complexity score (0 – ~5)
-        // ========================================
-
-        const avgSentLen       = metrics.avgSentenceLength;
-        const complexSentRatio = metrics.complexSentenceRatio;
-        const avgWordLen       = metrics.avgWordLength;
-
+        const effectiveAdvancedPct = pAdvanced + (literaryOffListCount/total)*100 + (difficultOffList.length/total)*100*0.5;
+        let cumulative = 0, p95Level = 'C2'; const threshold95 = onListWords * 0.95;
+        for (const lev of ['A1','A2','B1','B2','C1','C2']) { cumulative += counts[lev]; if (cumulative >= threshold95 && p95Level === 'C2') p95Level = lev; }
+        const avgSentLen = metrics.avgSentenceLength, complexSentRatio = metrics.complexSentenceRatio, avgWordLen = metrics.avgWordLength;
         let sentComplexity = 0;
-        if      (avgSentLen >= 25) sentComplexity += 2.5;
-        else if (avgSentLen >= 20) sentComplexity += 2.0;
-        else if (avgSentLen >= 16) sentComplexity += 1.5;
-        else if (avgSentLen >= 12) sentComplexity += 1.0;
-        else if (avgSentLen >= 8)  sentComplexity += 0.5;
-        sentComplexity += Math.min(complexSentRatio * 2.5, 2.0);
-        sentComplexity += Math.min(textStyle.syntaxComplexity * 0.3, 1.0);
-
-        // ========================================
-        // STEP 6 — Style complexity score (0 – ~5)
-        // ========================================
-
+        if (avgSentLen >= 25) sentComplexity += 2.5; else if (avgSentLen >= 20) sentComplexity += 2.0; else if (avgSentLen >= 16) sentComplexity += 1.5; else if (avgSentLen >= 12) sentComplexity += 1.0; else if (avgSentLen >= 8) sentComplexity += 0.5;
+        sentComplexity += Math.min(complexSentRatio * 2.5, 2.0); sentComplexity += Math.min(textStyle.syntaxComplexity * 0.3, 1.0);
         let styleComplexity = 0;
-        styleComplexity += Math.min(textStyle.idiomWeight * 0.4, 2.0);
-        styleComplexity += Math.min(textStyle.figurativeWeight * 0.3, 1.5);
-        styleComplexity += Math.min(literaryOffListCount * 0.4, 1.5);
-        if (avgWordLen >= 5.5)             styleComplexity += 0.5;
-        if (metrics.lexicalDiversity >= 0.65) styleComplexity += 0.5;
-
-        // ========================================
-        // STEP 7 — Text type indicator
-        // ========================================
-
-        const textTypeIndicator = textStyle.isLiterary ? '📚 Literary' :
-                                  textStyle.isAcademic ? '📰 Academic' :
-                                  textStyle.isSimple   ? '📋 Simple/Notice' : '📝 General';
-
-        // ========================================
-        // STEP 8 — Multi-criteria level determination
-        // ========================================
-
-        let level, confidence;
-        const factors = [];
-
-        // ---- C2: Mastery ----
-        const c2 = (
-            pC2 >= 3 ||
-            (pC2 >= 1.5 && pAdvanced >= 5) ||
-            (pC2 >= 1 && effectiveAdvancedPct >= 5 && (sentComplexity >= 3 || styleComplexity >= 3)) ||
-            (effectiveAdvancedPct >= 7 && sentComplexity >= 3.5 && styleComplexity >= 2.5) ||
-            (pAdvanced >= 5 && uniqueAdvanced >= 10 && sentComplexity >= 3)
-        );
-
-        // ---- C1: Advanced ----
-        const c1 = (
-            pAdvanced >= 3 ||
-            effectiveAdvancedPct >= 3.5 ||
-            (pAdvanced >= 1.5 && sentComplexity >= 2.5) ||
-            (pAdvanced >= 1.5 && styleComplexity >= 2.5) ||
-            (uniqueAdvanced >= 5 && pAdvanced >= 1) ||
-            (pAdvanced >= 2 && uniqueAdvanced >= 3 && sentComplexity >= 2) ||
-            (pB2 >= 5 && pAdvanced >= 1 && sentComplexity >= 2 && uniqueAdvanced >= 3) ||
-            (effectiveAdvancedPct >= 2.5 && sentComplexity >= 2.5 && styleComplexity >= 2)
-        );
-
-        // ---- B2: Upper-intermediate ----
-        const b2 = (
-            pB2 >= 5 ||
-            (pB2 >= 3 && pAdvanced >= 0.5 && sentComplexity >= 1.5) ||
-            (pB2 >= 3 && uniqueB2 >= 5) ||
-            pB2Plus >= 6 ||
-            (p95Level === 'B2' && pB2 >= 3) ||
-            (avgDifficulty >= 2.5 && pB1Plus >= 15)
-        );
-
-        // ---- B1: Intermediate ----
-        const b1 = (
-            pB1 >= 5 ||
-            pB1Plus >= 8 ||
-            (pB1 >= 3 && pB2 >= 1) ||
-            avgDifficulty >= 2.0 ||
-            (p95Level === 'B1' && pB1 >= 3) ||
-            pBasic < 82
-        );
-
-        // ---- A2: Elementary ----
-        const a2 = (
-            pBasic < 90 ||
-            pB1 >= 2 ||
-            avgSentLen >= 8
-        );
-
-        // Assign level — highest matching tier wins
-        if (c2) {
-            level = 'C2';
-            confidence = (pC2 >= 3 || (pAdvanced >= 5 && sentComplexity >= 3)) ? 'high' : 'medium';
-            if (pC2 >= 1)             factors.push(`${pC2.toFixed(1)}% C2 vocabulary`);
-            if (pAdvanced >= 2)       factors.push(`${pAdvanced.toFixed(1)}% C1+C2 vocabulary`);
-            if (sentComplexity >= 3)  factors.push('highly complex sentence structure');
-            if (styleComplexity >= 2.5) factors.push('sophisticated stylistic features');
-        }
-        else if (c1) {
-            level = 'C1';
-            confidence = (pAdvanced >= 3 || (effectiveAdvancedPct >= 3 && sentComplexity >= 2.5)) ? 'high' : 'medium';
-            factors.push(`${pAdvanced.toFixed(1)}% C1+C2 vocabulary`);
-            if (uniqueAdvanced >= 3)    factors.push(`${uniqueAdvanced} unique C1/C2 word types`);
-            if (sentComplexity >= 2.5)  factors.push('complex sentence structure');
-            if (styleComplexity >= 2)   factors.push('advanced stylistic features');
-        }
-        else if (b2) {
-            level = 'B2';
-            confidence = (pB2 >= 5 || pB2Plus >= 7) ? 'high' : 'medium';
-            factors.push(`${pB2.toFixed(1)}% B2 vocabulary`);
-            if (pAdvanced >= 0.5)      factors.push(`${pAdvanced.toFixed(1)}% C1+C2 vocabulary`);
-            if (sentComplexity >= 1.5) factors.push('moderate sentence complexity');
-        }
-        else if (b1) {
-            level = 'B1';
-            confidence = pB1 >= 8 ? 'high' : 'medium';
-            factors.push(`${pB1.toFixed(1)}% B1 vocabulary`);
-            if (pB2 >= 1) factors.push('some B2 vocabulary present');
-        }
-        else if (a2) {
-            level = 'A2';
-            confidence = 'high';
-            factors.push(`${pBasic.toFixed(1)}% basic (A1+A2) vocabulary`);
-        }
-        else {
-            level = 'A1';
-            confidence = 'high';
-            factors.push(`${pBasic.toFixed(1)}% basic (A1+A2) vocabulary`);
-        }
-
-        // ========================================
-        // STEP 9 — Sanity-check overrides
-        // ========================================
-
-        // Override A: No C1/C2 on-list words + no significant off-list complexity → cap at B2
-        if (counts.C1 === 0 && counts.C2 === 0 &&
-            literaryOffListCount < 2 && difficultOffList.length < 4 &&
-            sentComplexity < 3.5 && styleComplexity < 2.5 &&
-            (level === 'C1' || level === 'C2')) {
-            level = 'B2';
-            confidence = 'medium';
-            factors.push('no C1/C2 vocabulary detected in word list');
-        }
-
-        // Override B: Very little upper-level vocabulary → cap at B1
-        if (pB2Plus < 2 && effectiveAdvancedPct < 2 &&
-            uniqueB2 + uniqueAdvanced < 3 &&
-            (level === 'B2' || level === 'C1' || level === 'C2')) {
-            level = 'B1';
-            confidence = 'medium';
-            factors.push('minimal upper-level vocabulary');
-        }
-
-        // Override C: Overwhelmingly basic + low complexity → cap appropriately
-        if (pBasic >= 88 && pB2Plus < 3 && sentComplexity < 1.5 &&
-            (level === 'B2' || level === 'C1' || level === 'C2')) {
-            level = pB1 >= 5 ? 'B1' : 'A2';
-            confidence = 'medium';
-            factors.push('vocabulary is overwhelmingly basic');
-        }
-
-        // Override D: C1 needs minimum absolute advanced-word evidence
-        if (level === 'C1' && uniqueAdvanced < 2 &&
-            literaryOffListCount < 2 && difficultOffList.length < 3) {
-            level = 'B2';
-            confidence = 'medium';
-            factors.push('insufficient unique advanced vocabulary for C1');
-        }
-
-        // Override E: C2 needs either real C2 words or overwhelming complexity evidence
-        if (level === 'C2' && uniqueC2 < 2 &&
-            !(sentComplexity >= 4 && styleComplexity >= 3 && effectiveAdvancedPct >= 5)) {
-            level = 'C1';
-            confidence = 'medium';
-            factors.push('insufficient evidence for C2, downgraded to C1');
-        }
-
-        // Override F: Simple text structure can lower by 1 (only if syntax also simple)
-        if (textStyle.isSimple && sentComplexity < 2 &&
-            (level === 'B2' || level === 'C1')) {
-            const levelOrder = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
-            const idx = levelOrder.indexOf(level);
-            level = levelOrder[Math.max(idx - 1, 0)];
-            factors.push('simple text structure (notices, instructions, etc.)');
-            if (confidence === 'high') confidence = 'medium';
-        }
-
-        // Short-text confidence reduction
-        if (total < 50) {
-            if (confidence === 'high') confidence = 'medium';
-            else confidence = 'low';
-        }
-        if (total < 30) {
-            confidence = 'low';
-        }
-
-        // ========================================
-        // STEP 10 — Build output
-        // ========================================
-
-        const levelDescriptions = {
-            'C2': 'This text requires <strong>mastery-level (C2) proficiency</strong>.',
-            'C1': 'This text requires <strong>advanced (C1) proficiency</strong>.',
-            'B2': 'This text is suitable for <strong>upper-intermediate (B2)</strong> learners.',
-            'B1': 'This text is suitable for <strong>intermediate (B1)</strong> learners.',
-            'A2': 'This text is suitable for <strong>elementary (A2)</strong> learners.',
-            'A1': 'This text is suitable for <strong>beginners (A1)</strong>.'
-        };
-
-        let explanation = levelDescriptions[level];
-        if (factors.length > 0) {
-            const uniqueFactors = [...new Set(factors)];
-            explanation += ` Key indicators: ${uniqueFactors.join('; ')}.`;
-        }
-
-        const textTypeNote = `
-            <br><br><em style="color:#6b7280;">Text Type:</em>
-            <span style="color:#374151; font-weight: 600;">${textTypeIndicator}</span>
-        `;
-
-        const metricsNote = `
-            <br><em style="color:#6b7280;">Text Metrics:</em>
-            <span style="color:#374151;">
-            ${total} words across ${metrics.sentenceCount} sentences
-            (avg ${avgSentLen.toFixed(1)} words/sentence) •
-            Avg word length: ${avgWordLen.toFixed(1)} chars
-            </span>
-        `;
-
-        const vocabNote = `
-            <br><em style="color:#6b7280;">Vocabulary:</em>
-            <span style="color:#374151;">
-            Basic (A1+A2): ${pBasic.toFixed(1)}% •
-            Intermediate (B1): ${pB1.toFixed(1)}% •
-            Upper-Int (B2): ${pB2.toFixed(1)}% •
-            Advanced (C1+C2): ${pAdvanced.toFixed(1)}% •
-            Weighted avg: ${avgDifficulty.toFixed(2)}/6
-            </span>
-        `;
-
-        const diagnosticNote = `
-            <br><em style="color:#6b7280;">Analysis Detail:</em>
-            <span style="color:#374151;">
-            Eff. advanced: ${effectiveAdvancedPct.toFixed(1)}% •
-            Unique C1/C2 types: ${uniqueAdvanced} •
-            Syntax score: ${sentComplexity.toFixed(1)}/5 •
-            Style score: ${styleComplexity.toFixed(1)}/5 •
-            95th pctile: ${p95Level}
-            </span>
-        `;
-
-        let lengthNote = '';
-        if (total < 50) {
-            lengthNote = `<br><br><em style="color:#d97706;">⚠️ Short text (${total} words) — results may be less reliable.</em>`;
-        }
-
-        const confLabels = {
-            'high':   '🟢 High confidence',
-            'medium': '🟡 Medium confidence',
-            'low':    '🟠 Low confidence'
-        };
-
-        const nextLevel = {
-            'A1': 'A2', 'A2': 'B1', 'B1': 'B2', 'B2': 'C1', 'C1': 'C2'
-        }[level] || null;
-
-        const recommendationText = level === 'C2'
-            ? `This passage is appropriate for <strong>C2</strong> learners and represents the highest level of language proficiency.`
-            : `This passage is appropriate for <strong>${level}</strong> learners for intensive study, or for <strong>${nextLevel}</strong> learners for extensive reading practice.`;
-
+        styleComplexity += Math.min(textStyle.idiomWeight * 0.4, 2.0); styleComplexity += Math.min(textStyle.figurativeWeight * 0.3, 1.5); styleComplexity += Math.min(literaryOffListCount * 0.4, 1.5);
+        if (avgWordLen >= 5.5) styleComplexity += 0.5; if (metrics.lexicalDiversity >= 0.65) styleComplexity += 0.5;
+        const textTypeIndicator = textStyle.isLiterary ? '📚 Literary' : textStyle.isAcademic ? '📰 Academic' : textStyle.isSimple ? '📋 Simple/Notice' : '📝 General';
+        let level, confidence; const factors = [];
+        const c2 = (pC2>=3||(pC2>=1.5&&pAdvanced>=5)||(pC2>=1&&effectiveAdvancedPct>=5&&(sentComplexity>=3||styleComplexity>=3))||(effectiveAdvancedPct>=7&&sentComplexity>=3.5&&styleComplexity>=2.5)||(pAdvanced>=5&&uniqueAdvanced>=10&&sentComplexity>=3));
+        const c1 = (pAdvanced>=3||effectiveAdvancedPct>=3.5||(pAdvanced>=1.5&&sentComplexity>=2.5)||(pAdvanced>=1.5&&styleComplexity>=2.5)||(uniqueAdvanced>=5&&pAdvanced>=1)||(pAdvanced>=2&&uniqueAdvanced>=3&&sentComplexity>=2)||(pB2>=5&&pAdvanced>=1&&sentComplexity>=2&&uniqueAdvanced>=3)||(effectiveAdvancedPct>=2.5&&sentComplexity>=2.5&&styleComplexity>=2));
+        const b2 = (pB2>=5||(pB2>=3&&pAdvanced>=0.5&&sentComplexity>=1.5)||(pB2>=3&&uniqueB2>=5)||pB2Plus>=6||(p95Level==='B2'&&pB2>=3)||(avgDifficulty>=2.5&&pB1Plus>=15));
+        const b1 = (pB1>=5||pB1Plus>=8||(pB1>=3&&pB2>=1)||avgDifficulty>=2.0||(p95Level==='B1'&&pB1>=3)||pBasic<82);
+        const a2 = (pBasic<90||pB1>=2||avgSentLen>=8);
+        if (c2) { level='C2'; confidence=(pC2>=3||(pAdvanced>=5&&sentComplexity>=3))?'high':'medium'; if(pC2>=1)factors.push(`${pC2.toFixed(1)}% C2 vocabulary`); if(pAdvanced>=2)factors.push(`${pAdvanced.toFixed(1)}% C1+C2 vocabulary`); if(sentComplexity>=3)factors.push('highly complex sentence structure'); if(styleComplexity>=2.5)factors.push('sophisticated stylistic features'); }
+        else if (c1) { level='C1'; confidence=(pAdvanced>=3||(effectiveAdvancedPct>=3&&sentComplexity>=2.5))?'high':'medium'; factors.push(`${pAdvanced.toFixed(1)}% C1+C2 vocabulary`); if(uniqueAdvanced>=3)factors.push(`${uniqueAdvanced} unique C1/C2 word types`); if(sentComplexity>=2.5)factors.push('complex sentence structure'); if(styleComplexity>=2)factors.push('advanced stylistic features'); }
+        else if (b2) { level='B2'; confidence=(pB2>=5||pB2Plus>=7)?'high':'medium'; factors.push(`${pB2.toFixed(1)}% B2 vocabulary`); if(pAdvanced>=0.5)factors.push(`${pAdvanced.toFixed(1)}% C1+C2 vocabulary`); if(sentComplexity>=1.5)factors.push('moderate sentence complexity'); }
+        else if (b1) { level='B1'; confidence=pB1>=8?'high':'medium'; factors.push(`${pB1.toFixed(1)}% B1 vocabulary`); if(pB2>=1)factors.push('some B2 vocabulary present'); }
+        else if (a2) { level='A2'; confidence='high'; factors.push(`${pBasic.toFixed(1)}% basic (A1+A2) vocabulary`); }
+        else { level='A1'; confidence='high'; factors.push(`${pBasic.toFixed(1)}% basic (A1+A2) vocabulary`); }
+        if(counts.C1===0&&counts.C2===0&&literaryOffListCount<2&&difficultOffList.length<4&&sentComplexity<3.5&&styleComplexity<2.5&&(level==='C1'||level==='C2')){level='B2';confidence='medium';factors.push('no C1/C2 vocabulary detected in word list');}
+        if(pB2Plus<2&&effectiveAdvancedPct<2&&uniqueB2+uniqueAdvanced<3&&(level==='B2'||level==='C1'||level==='C2')){level='B1';confidence='medium';factors.push('minimal upper-level vocabulary');}
+        if(pBasic>=88&&pB2Plus<3&&sentComplexity<1.5&&(level==='B2'||level==='C1'||level==='C2')){level=pB1>=5?'B1':'A2';confidence='medium';factors.push('vocabulary is overwhelmingly basic');}
+        if(level==='C1'&&uniqueAdvanced<2&&literaryOffListCount<2&&difficultOffList.length<3){level='B2';confidence='medium';factors.push('insufficient unique advanced vocabulary for C1');}
+        if(level==='C2'&&uniqueC2<2&&!(sentComplexity>=4&&styleComplexity>=3&&effectiveAdvancedPct>=5)){level='C1';confidence='medium';factors.push('insufficient evidence for C2, downgraded to C1');}
+        if(textStyle.isSimple&&sentComplexity<2&&(level==='B2'||level==='C1')){const lo=['A1','A2','B1','B2','C1','C2'];level=lo[Math.max(lo.indexOf(level)-1,0)];factors.push('simple text structure');if(confidence==='high')confidence='medium';}
+        if(total<50){if(confidence==='high')confidence='medium';else confidence='low';}
+        if(total<30)confidence='low';
+        const ld={'C2':'This text requires <strong>mastery-level (C2) proficiency</strong>.','C1':'This text requires <strong>advanced (C1) proficiency</strong>.','B2':'This text is suitable for <strong>upper-intermediate (B2)</strong> learners.','B1':'This text is suitable for <strong>intermediate (B1)</strong> learners.','A2':'This text is suitable for <strong>elementary (A2)</strong> learners.','A1':'This text is suitable for <strong>beginners (A1)</strong>.'};
+        let explanation = ld[level]; if(factors.length>0) explanation += ` Key indicators: ${[...new Set(factors)].join('; ')}.`;
+        const cl={'high':'🟢 High confidence','medium':'🟡 Medium confidence','low':'🟠 Low confidence'};
+        const nl={'A1':'A2','A2':'B1','B1':'B2','B2':'C1','C1':'C2'}[level]||null;
+        const rec = level==='C2'?`This passage is appropriate for <strong>C2</strong> learners and represents the highest level of language proficiency.`:`This passage is appropriate for <strong>${level}</strong> learners for intensive study, or for <strong>${nl}</strong> learners for extensive reading practice.`;
         document.getElementById('verdict-text').innerHTML = `
-            <strong style="font-size: 1.4em; color: #1e3a8a;">Text Level: ${level}</strong>
-            <span style="margin-left: 15px; font-size: 0.85em; color: #6b7280;">${confLabels[confidence]}</span>
+            <strong style="font-size:1.4em;color:#1e3a8a;">Text Level: ${level}</strong>
+            <span style="margin-left:15px;font-size:0.85em;color:#6b7280;">${cl[confidence]}</span>
             <br><br>${explanation}
-            ${textTypeNote}
-            ${metricsNote}
-            ${vocabNote}
-            ${diagnosticNote}
-            ${lengthNote}
-            <br><br><em style="color:#6b7280;">Recommendation:</em>
-            <span style="color:#374151;">
-            ${recommendationText}
-            </span>
+            <br><br><em style="color:#6b7280;">Text Type:</em> <span style="color:#374151;font-weight:600;">${textTypeIndicator}</span>
+            <br><em style="color:#6b7280;">Text Metrics:</em> <span style="color:#374151;">${total} words across ${metrics.sentenceCount} sentences (avg ${avgSentLen.toFixed(1)} words/sentence) • Avg word length: ${avgWordLen.toFixed(1)} chars</span>
+            <br><em style="color:#6b7280;">Vocabulary:</em> <span style="color:#374151;">Basic (A1+A2): ${pBasic.toFixed(1)}% • Intermediate (B1): ${pB1.toFixed(1)}% • Upper-Int (B2): ${pB2.toFixed(1)}% • Advanced (C1+C2): ${pAdvanced.toFixed(1)}% • Weighted avg: ${avgDifficulty.toFixed(2)}/6</span>
+            <br><em style="color:#6b7280;">Analysis Detail:</em> <span style="color:#374151;">Eff. advanced: ${effectiveAdvancedPct.toFixed(1)}% • Unique C1/C2 types: ${uniqueAdvanced} • Syntax score: ${sentComplexity.toFixed(1)}/5 • Style score: ${styleComplexity.toFixed(1)}/5 • 95th pctile: ${p95Level}</span>
+            ${total<50?`<br><br><em style="color:#d97706;">⚠️ Short text (${total} words) — results may be less reliable.</em>`:''}
+            <br><br><em style="color:#6b7280;">Recommendation:</em> <span style="color:#374151;">${rec}</span>
         `;
     }
-
-    // ============================================================
-    // WORD LISTS BUILDER
-    // ============================================================
 
     function formatPos(pos) {
         if (!pos) return '';
         const p = pos.toLowerCase().trim();
-        const map = {
-            'v': 'v', 'verb': 'v',
-            'n': 'n', 'noun': 'n',
-            'adj': 'adj', 'adjective': 'adj',
-            'adv': 'adv', 'adverb': 'adv',
-            'prep': 'prep', 'preposition': 'prep',
-            'conj': 'conj', 'conjunction': 'conj',
-            'det': 'det', 'determiner': 'det',
-            'pron': 'pron', 'pronoun': 'pron',
-            'excl': 'excl', 'exclamation': 'excl',
-            'number': 'num', 'num': 'num'
-        };
-        return map[p] || p;
+        return {'v':'v','verb':'v','n':'n','noun':'n','adj':'adj','adjective':'adj','adv':'adv','adverb':'adv','prep':'prep','preposition':'prep','conj':'conj','conjunction':'conj','det':'det','determiner':'det','pron':'pron','pronoun':'pron','excl':'excl','exclamation':'excl','number':'num','num':'num'}[p] || p;
     }
 
     function buildWordLists(wordsByLevel) {
         const container = document.getElementById('word-lists-content');
         const wrapper = document.getElementById('word-lists-area');
         container.innerHTML = '';
-
-        const levelsToShow = ['B1', 'B2', 'C1', 'C2'];
-        const dotColors = {
-            B1: '#fcd34d', B2: '#f59e0b', C1: '#ef4444', C2: '#a855f7'
-        };
+        const dotColors = { B1: '#fcd34d', B2: '#f59e0b', C1: '#ef4444', C2: '#a855f7' };
         let hasAny = false;
-
-        for (const level of levelsToShow) {
-            const wordsMap = wordsByLevel[level];
-            if (!wordsMap || wordsMap.size === 0) continue;
-            hasAny = true;
-
-            const sorted = Array.from(wordsMap.values()).sort((a, b) =>
-                a.word.toLowerCase().localeCompare(b.word.toLowerCase())
-            );
-
-            const block = document.createElement('div');
-            block.className = 'word-level-block';
-
-            const header = document.createElement('div');
-            header.className = `word-level-header word-level-header-${level}`;
-            header.innerHTML = `
-                <span class="level-badge">
-                    <span class="badge-dot" style="background:${dotColors[level]}"></span>
-                    ${level} Words
-                </span>
-                <span style="display:flex;align-items:center;gap:10px;">
-                    <span class="word-count-tag">${sorted.length} word${sorted.length !== 1 ? 's' : ''}</span>
-                    <button class="copy-btn" onclick="copyWordList(this, '${level}')">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                        Copy
-                    </button>
-                </span>
-            `;
-
-            const body = document.createElement('div');
-            body.className = 'word-level-body';
-            body.setAttribute('data-level', level);
-
+        for (const level of ['B1','B2','C1','C2']) {
+            const wm = wordsByLevel[level]; if (!wm || wm.size === 0) continue; hasAny = true;
+            const sorted = Array.from(wm.values()).sort((a,b) => a.word.toLowerCase().localeCompare(b.word.toLowerCase()));
+            const block = document.createElement('div'); block.className = 'word-level-block';
+            const header = document.createElement('div'); header.className = `word-level-header word-level-header-${level}`;
+            header.innerHTML = `<span class="level-badge"><span class="badge-dot" style="background:${dotColors[level]}"></span>${level} Words</span><span style="display:flex;align-items:center;gap:10px;"><span class="word-count-tag">${sorted.length} word${sorted.length!==1?'s':''}</span><button class="copy-btn" onclick="copyWordList(this, '${level}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy</button></span>`;
+            const body = document.createElement('div'); body.className = 'word-level-body'; body.setAttribute('data-level', level);
             for (const entry of sorted) {
-                const chip = document.createElement('span');
-                chip.className = 'word-chip';
+                const chip = document.createElement('span'); chip.className = 'word-chip';
                 const posStr = formatPos(entry.pos);
-                chip.innerHTML = posStr
-                    ? `${entry.word} <span class="pos-tag">(${posStr})</span>`
-                    : entry.word;
+                chip.innerHTML = posStr ? `${entry.word} <span class="pos-tag">(${posStr})</span>` : entry.word;
                 chip.setAttribute('data-word', entry.word.toLowerCase());
-                chip.addEventListener('click', function() {
-                    jumpToWordInText(this.getAttribute('data-word'));
-                });
+                chip.addEventListener('click', function() { jumpToWordInText(this.getAttribute('data-word')); });
                 body.appendChild(chip);
             }
-
-            block.appendChild(header);
-            block.appendChild(body);
-            container.appendChild(block);
+            block.appendChild(header); block.appendChild(body); container.appendChild(block);
         }
-
         wrapper.style.display = hasAny ? 'block' : 'none';
     }
 
     function jumpToWordInText(word) {
         const container = document.getElementById('highlighted-content');
-        const spans = container.querySelectorAll('.cefr-word');
-        let targetSpan = null;
-
-        for (const span of spans) {
-            const lemmaResult = lemmatize(span.textContent);
-            if (lemmaResult.lemma === word || span.textContent.toLowerCase() === word) {
-                targetSpan = span;
-                break;
-            }
-        }
-
-        if (!targetSpan) return;
-
-        // Remove any existing highlight
-        const prev = container.querySelector('.jump-highlight');
-        if (prev) prev.classList.remove('jump-highlight');
-
-        // Scroll to the word
-        targetSpan.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-        // Add highlight after scroll settles
-        setTimeout(function() {
-            targetSpan.classList.add('jump-highlight');
-        }, 300);
-
-        // Remove highlight after animation
-        setTimeout(function() {
-            targetSpan.classList.remove('jump-highlight');
-        }, 2000);
+        const spans = container.querySelectorAll('.cefr-word'); let target = null;
+        for (const span of spans) { const l = lemmatize(span.textContent); if (l.lemma === word || span.textContent.toLowerCase() === word) { target = span; break; } }
+        if (!target) return;
+        const prev = container.querySelector('.jump-highlight'); if (prev) prev.classList.remove('jump-highlight');
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => target.classList.add('jump-highlight'), 300);
+        setTimeout(() => target.classList.remove('jump-highlight'), 2000);
     }
 
     function copyWordList(btn, level) {
         const body = document.querySelector(`.word-level-body[data-level="${level}"]`);
         if (!body) return;
-        const chips = body.querySelectorAll('.word-chip');
-        const lines = [];
-        chips.forEach(chip => {
-            lines.push(chip.textContent.trim());
-        });
-        const text = lines.join('\n');
-
-        navigator.clipboard.writeText(text).then(() => {
-            btn.classList.add('copied');
-            const origHTML = btn.innerHTML;
+        const lines = []; body.querySelectorAll('.word-chip').forEach(chip => lines.push(chip.textContent.trim()));
+        navigator.clipboard.writeText(lines.join('\n')).then(() => {
+            btn.classList.add('copied'); const orig = btn.innerHTML;
             btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
-            setTimeout(() => {
-                btn.classList.remove('copied');
-                btn.innerHTML = origHTML;
-            }, 2000);
+            setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = orig; }, 2000);
         });
     }
 
@@ -2115,9 +1273,10 @@
         document.getElementById('inputText').value = '';
         document.getElementById('output-area').style.display = 'none';
         document.getElementById('highlighted-content').innerHTML = '';
+        document.getElementById('treemap-container').innerHTML = '';
         document.getElementById('word-lists-area').style.display = 'none';
         document.getElementById('word-lists-content').innerHTML = '';
-        analysisData = {};
+        lastTreemapCounts = null; analysisData = {};
     }
 </script>
 
