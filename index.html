@@ -161,7 +161,10 @@
             position: absolute; display: flex; flex-direction: column;
             align-items: center; justify-content: center;
             box-sizing: border-box; border: 2px solid #ffffff;
-            cursor: default; overflow: hidden;
+            cursor: default;
+            /* ★ CHANGED: overflow visible so text is never clipped;
+               container's overflow:hidden still clips at the outer edge */
+            overflow: visible;
             padding: 10px 8px;
             gap: 3px;
             opacity: 0; transform: scale(0.92);
@@ -1001,86 +1004,136 @@
     let lastTreemapCounts = null;
 
     function renderTreemap(counts) {
-        const container = document.getElementById('treemap-container');
-        container.innerHTML = '';
-        const total = counts.Total || 1;
-        const calcPct = v => ((v / total) * 100).toFixed(1);
+    const container = document.getElementById('treemap-container');
+    container.innerHTML = '';
+    const total = counts.Total || 1;
+    const calcPct = v => ((v / total) * 100).toFixed(1);
 
-        const cefrItems = [
-            { label: 'A1', value: counts.A1, bg: '#d1fae5', text: '#065f46' },
-            { label: 'A2', value: counts.A2, bg: '#a7f3d0', text: '#064e3b' },
-            { label: 'B1', value: counts.B1, bg: '#fef3c7', text: '#92400e' },
-            { label: 'B2', value: counts.B2, bg: '#fde68a', text: '#78350f' },
-            { label: 'C1', value: counts.C1, bg: '#fca5a5', text: '#7f1d1d' },
-            { label: 'C2', value: counts.C2, bg: '#d8b4fe', text: '#3b0764' }
-        ];
-        const offItem = { label: 'Off List', value: counts.Off, bg: '#e5e7eb', text: '#6b7280' };
+    const cefrItemsRaw = [
+        { label: 'A1', value: counts.A1, bg: '#d1fae5', text: '#065f46' },
+        { label: 'A2', value: counts.A2, bg: '#a7f3d0', text: '#064e3b' },
+        { label: 'B1', value: counts.B1, bg: '#fef3c7', text: '#92400e' },
+        { label: 'B2', value: counts.B2, bg: '#fde68a', text: '#78350f' },
+        { label: 'C1', value: counts.C1, bg: '#fca5a5', text: '#7f1d1d' },
+        { label: 'C2', value: counts.C2, bg: '#d8b4fe', text: '#3b0764' }
+    ];
+    const offItemRaw = { label: 'Off List', value: counts.Off, bg: '#e5e7eb', text: '#6b7280' };
 
-        const cW = container.offsetWidth;
-        const cH = container.offsetHeight;
-        if (cW === 0 || cH === 0) return;
+    const cW = container.offsetWidth;
+    const cH = container.offsetHeight;
+    if (cW === 0 || cH === 0) return;
 
-        const cefrTotal = cefrItems.reduce((s, d) => s + d.value, 0);
-        const grandTotal = cefrTotal + offItem.value;
-        if (grandTotal === 0) return;
+    /* -------- active items -------- */
+    const activeCefr = cefrItemsRaw.filter(d => d.value > 0);
+    const hasOff = offItemRaw.value > 0;
+    const allActive = [...activeCefr, ...(hasOff ? [offItemRaw] : [])];
+    if (allActive.length === 0) return;
 
-        let allCells = [];
+    /* ======== LAYER 1 — inflate small values for layout ======== */
+    const containerArea = cW * cH;
+    // Each cell must occupy at least this many px²; responsive to screen size
+    const MIN_CELL_AREA = Math.max(3200, containerArea * 0.024);
+    const totalValue = allActive.reduce((s, d) => s + d.value, 0);
+    // 1.35× fudge compensates for the inflated-total feedback effect
+    const minLayoutValue = Math.max(1, (MIN_CELL_AREA / containerArea) * totalValue * 1.35);
 
-        if (cefrTotal > 0 && offItem.value > 0) {
-            const cefrWidth = Math.round((cefrTotal / grandTotal) * cW);
-            const offWidth = cW - cefrWidth;
-            allCells = treemapLayout(cefrItems, { x: 0, y: 0, w: cefrWidth, h: cH });
-            allCells.push({ ...offItem, x: cefrWidth, y: 0, w: offWidth, h: cH });
-        } else if (cefrTotal > 0) {
-            allCells = treemapLayout(cefrItems, { x: 0, y: 0, w: cW, h: cH });
-        } else {
-            allCells.push({ ...offItem, x: 0, y: 0, w: cW, h: cH });
+    const cefrItems = activeCefr.map(d => ({
+        ...d,
+        displayValue: d.value,                       // keep truthful number
+        value: Math.max(d.value, minLayoutValue)      // inflate for layout
+    }));
+    const offItem = hasOff ? {
+        ...offItemRaw,
+        displayValue: offItemRaw.value,
+        value: Math.max(offItemRaw.value, minLayoutValue)
+    } : null;
+
+    /* ======== LAYER 2 — minimum column widths ======== */
+    const cefrTotal = cefrItems.reduce((s, d) => s + d.value, 0);
+    const grandTotal = cefrTotal + (offItem ? offItem.value : 0);
+    const MIN_COL_WIDTH = 64;
+    let allCells = [];
+
+    if (cefrTotal > 0 && offItem) {
+        let cefrWidth = Math.round((cefrTotal / grandTotal) * cW);
+        let offWidth  = cW - cefrWidth;
+        if (offWidth  < MIN_COL_WIDTH) { offWidth  = MIN_COL_WIDTH; cefrWidth = cW - offWidth; }
+        if (cefrWidth < MIN_COL_WIDTH) { cefrWidth = MIN_COL_WIDTH; offWidth  = cW - cefrWidth; }
+        allCells = treemapLayout(cefrItems, { x: 0, y: 0, w: cefrWidth, h: cH });
+        allCells.push({ ...offItem, x: cefrWidth, y: 0, w: offWidth, h: cH });
+    } else if (cefrTotal > 0) {
+        allCells = treemapLayout(cefrItems, { x: 0, y: 0, w: cW, h: cH });
+    } else if (offItem) {
+        allCells.push({ ...offItem, x: 0, y: 0, w: cW, h: cH });
+    }
+
+    /* ======== LAYER 3 — hard-minimum dimensions (safety net) ======== */
+    const MIN_W = 48, MIN_H = 40;
+    allCells.forEach(cell => {
+        const dv = cell.displayValue !== undefined ? cell.displayValue : cell.value;
+        if (dv > 0) {
+            if (cell.w < MIN_W) {
+                cell.w = MIN_W;
+                if (cell.x + cell.w > cW) cell.x = Math.max(0, cW - cell.w);
+            }
+            if (cell.h < MIN_H) {
+                cell.h = MIN_H;
+                if (cell.y + cell.h > cH) cell.y = Math.max(0, cH - cell.h);
+            }
+        }
+    });
+
+    /* -------- render -------- */
+    const tooltip = document.getElementById('treemap-tooltip');
+
+    allCells.forEach((cell, idx) => {
+        const dv = cell.displayValue !== undefined ? cell.displayValue : cell.value;
+        if (!dv || dv <= 0) return;
+        const pct = calcPct(dv);
+        const div = document.createElement('div');
+        div.className = 'treemap-cell';
+        div.style.left   = cell.x + 'px';
+        div.style.top    = cell.y + 'px';
+        div.style.width  = cell.w + 'px';
+        div.style.height = cell.h + 'px';
+        div.style.backgroundColor = cell.bg;
+        div.style.color  = cell.text;
+        div.style.animationDelay = (idx * 55) + 'ms';
+
+        // Smaller cells get higher z-index so they stack on top of neighbors
+        const cellArea = cell.w * cell.h;
+        if (cellArea < 10000) {
+            div.style.zIndex = String(Math.max(2, 10 - Math.floor(cellArea / 1000)));
         }
 
-        const tooltip = document.getElementById('treemap-tooltip');
+        const minDim = Math.min(cell.w, cell.h);
+        let sizeClass = 'size-lg';
+        if      (minDim < 22 || cellArea < 700)   sizeClass = 'size-dot';
+        else if (minDim < 32 || cellArea < 1500)   sizeClass = 'size-xxs';
+        else if (minDim < 46 || cellArea < 3200)   sizeClass = 'size-xs';
+        else if (minDim < 62 || cellArea < 5500)   sizeClass = 'size-sm';
+        else if (minDim < 90 || cellArea < 12000)  sizeClass = 'size-md';
+        div.classList.add(sizeClass);
 
-        allCells.forEach((cell, idx) => {
-            if (!cell.value || cell.value <= 0) return;
-            const pct = calcPct(cell.value);
-            const div = document.createElement('div');
-            div.className = 'treemap-cell';
-            div.style.left   = cell.x + 'px';
-            div.style.top    = cell.y + 'px';
-            div.style.width  = cell.w + 'px';
-            div.style.height = cell.h + 'px';
-            div.style.backgroundColor = cell.bg;
-            div.style.color  = cell.text;
-            div.style.animationDelay = (idx * 55) + 'ms';
+        div.innerHTML = `
+            <span class="treemap-cell-level">${cell.label}</span>
+            <span class="treemap-cell-count">${dv}</span>
+            <span class="treemap-cell-percent">${pct}%</span>
+        `;
 
-            const minDim = Math.min(cell.w, cell.h);
-            const area   = cell.w * cell.h;
-            let sizeClass = 'size-lg';
-            if      (minDim < 22 || area < 700)   sizeClass = 'size-dot';
-            else if (minDim < 32 || area < 1500)   sizeClass = 'size-xxs';
-            else if (minDim < 46 || area < 3200)   sizeClass = 'size-xs';
-            else if (minDim < 62 || area < 5500)   sizeClass = 'size-sm';
-            else if (minDim < 90 || area < 12000)  sizeClass = 'size-md';
-            div.classList.add(sizeClass);
-
-            div.innerHTML = `
-                <span class="treemap-cell-level">${cell.label}</span>
-                <span class="treemap-cell-count">${cell.value}</span>
-                <span class="treemap-cell-percent">${pct}%</span>
-            `;
-
-            div.addEventListener('mouseenter', () => {
-                tooltip.textContent = `${cell.label}: ${cell.value} words (${pct}%)`;
-                tooltip.classList.add('visible');
-            });
-            div.addEventListener('mousemove', e => {
-                tooltip.style.left = (e.clientX + 14) + 'px';
-                tooltip.style.top  = (e.clientY - 36) + 'px';
-            });
-            div.addEventListener('mouseleave', () => tooltip.classList.remove('visible'));
-
-            container.appendChild(div);
+        div.addEventListener('mouseenter', () => {
+            tooltip.textContent = `${cell.label}: ${dv} words (${pct}%)`;
+            tooltip.classList.add('visible');
         });
-    }
+        div.addEventListener('mousemove', e => {
+            tooltip.style.left = (e.clientX + 14) + 'px';
+            tooltip.style.top  = (e.clientY - 36) + 'px';
+        });
+        div.addEventListener('mouseleave', () => tooltip.classList.remove('visible'));
+
+        container.appendChild(div);
+    });
+}
 
     let resizeTimer;
     window.addEventListener('resize', () => {
