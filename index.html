@@ -161,15 +161,13 @@
             position: absolute; display: flex; flex-direction: column;
             align-items: center; justify-content: center;
             box-sizing: border-box; border: 2px solid #ffffff;
-            cursor: default;
-            /* ★ CHANGED: overflow visible so text is never clipped;
-               container's overflow:hidden still clips at the outer edge */
-            overflow: visible;
-            padding: 10px 8px;
+            cursor: default; overflow: hidden;
+            padding: 6px;
             gap: 3px;
             opacity: 0; transform: scale(0.92);
             animation: treemapCellIn 0.45s ease-out forwards;
             transition: filter 0.2s ease, box-shadow 0.2s ease;
+            text-align: center;
         }
         .treemap-cell:hover {
             filter: brightness(0.91) saturate(1.15);
@@ -179,6 +177,9 @@
         @keyframes treemapCellIn {
             from { opacity: 0; transform: scale(0.92); }
             to   { opacity: 1; transform: scale(1); }
+        }
+        .treemap-cell-level, .treemap-cell-count, .treemap-cell-percent {
+            max-width: 100%;
         }
         .treemap-cell-level {
             font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
@@ -190,6 +191,8 @@
         .treemap-cell-percent {
             font-size: 0.76rem; font-weight: 600; opacity: 0.7; line-height: 1;
         }
+        
+        /* Adjusted size classes to gracefully hide text elements when space is tight */
         .treemap-cell.size-lg .treemap-cell-level  { font-size: 0.82rem; }
         .treemap-cell.size-lg .treemap-cell-count   { font-size: 2.1rem; }
         .treemap-cell.size-lg .treemap-cell-percent  { font-size: 0.85rem; }
@@ -199,19 +202,19 @@
         .treemap-cell.size-sm .treemap-cell-level  { font-size: 0.62rem; }
         .treemap-cell.size-sm .treemap-cell-count   { font-size: 1rem; }
         .treemap-cell.size-sm .treemap-cell-percent  { font-size: 0.62rem; }
-        .treemap-cell.size-sm { padding: 6px 5px; gap: 2px; }
+        .treemap-cell.size-sm { padding: 4px; gap: 2px; }
         .treemap-cell.size-xs .treemap-cell-level  { font-size: 0.58rem; letter-spacing: 0.04em; }
         .treemap-cell.size-xs .treemap-cell-count   { font-size: 0.82rem; }
-        .treemap-cell.size-xs .treemap-cell-percent  { display: none; }
-        .treemap-cell.size-xs { padding: 4px 4px; gap: 1px; }
+        .treemap-cell.size-xs .treemap-cell-percent  { display: none; } /* Hide % to save space */
+        .treemap-cell.size-xs { padding: 3px; gap: 1px; }
         .treemap-cell.size-xxs .treemap-cell-level  { font-size: 0.52rem; }
         .treemap-cell.size-xxs .treemap-cell-count   { font-size: 0.72rem; }
         .treemap-cell.size-xxs .treemap-cell-percent { display: none; }
-        .treemap-cell.size-xxs { padding: 2px 3px; gap: 1px; }
+        .treemap-cell.size-xxs { padding: 2px; gap: 1px; }
         .treemap-cell.size-dot .treemap-cell-level   { font-size: 0.5rem; }
         .treemap-cell.size-dot .treemap-cell-count    { display: none; }
         .treemap-cell.size-dot .treemap-cell-percent  { display: none; }
-        .treemap-cell.size-dot { padding: 1px 2px; gap: 0; }
+        .treemap-cell.size-dot { padding: 1px; gap: 0; }
 
         .treemap-tooltip {
             position: fixed; padding: 8px 14px; background: #1f2937; color: #fff;
@@ -518,7 +521,6 @@
         ['fisherman', 'B1'], ['fishermen', 'B1'],
         ['landlubber', 'C1'], ['landlubbers', 'C1'],
         ['delectable', 'C1'],
-        // ★ ADDED: common simple words that should not inflate difficulty
         ['café', 'A1'], ['cafe', 'A1'], ['pizza', 'A1'], ['chocolate', 'A1'],
         ['sightseeing', 'A2'], ['ice cream', 'A1'],
         ['holiday', 'A1'], ['holidays', 'A1']
@@ -581,7 +583,6 @@
         'shan', 'sai', 'tai', 'aberdeen', 'kowloon', 'tsim', 'tsui', 'mongkok',
         'yau', 'tei', 'shek', 'kip', 'mei', 'tung', 'wan', 'chai', 'pok',
         'fu', 'lam', 'tuen', 'mun', 'yuen', 'fanling', 'sheung', 'shui',
-        // ★ ADDED: proper nouns for the "Hi Brian" text and similar travel letters
         'brian', 'cindy', 'rome', 'italy', 'italian', 'italians'
     ]);
 
@@ -957,12 +958,12 @@
     }
 
     function treemapLayout(data, rect) {
-        const items = data.filter(d => d.value > 0);
+        const items = data.filter(d => d.layoutWeight > 0);
         if (items.length === 0) return [];
-        const totalValue = items.reduce((sum, d) => sum + d.value, 0);
+        const totalWeight = items.reduce((sum, d) => sum + d.layoutWeight, 0);
         const containerArea = rect.w * rect.h;
         const normalized = items.map(d => ({
-            ...d, area: (d.value / totalValue) * containerArea
+            ...d, area: (d.layoutWeight / totalWeight) * containerArea
         })).sort((a, b) => b.area - a.area);
         const result = [];
         squarifyHelper(normalized, { ...rect }, result);
@@ -1004,136 +1005,101 @@
     let lastTreemapCounts = null;
 
     function renderTreemap(counts) {
-    const container = document.getElementById('treemap-container');
-    container.innerHTML = '';
-    const total = counts.Total || 1;
-    const calcPct = v => ((v / total) * 100).toFixed(1);
+        const container = document.getElementById('treemap-container');
+        container.innerHTML = '';
+        const total = counts.Total || 1;
+        const calcPct = v => ((v / total) * 100).toFixed(1);
 
-    const cefrItemsRaw = [
-        { label: 'A1', value: counts.A1, bg: '#d1fae5', text: '#065f46' },
-        { label: 'A2', value: counts.A2, bg: '#a7f3d0', text: '#064e3b' },
-        { label: 'B1', value: counts.B1, bg: '#fef3c7', text: '#92400e' },
-        { label: 'B2', value: counts.B2, bg: '#fde68a', text: '#78350f' },
-        { label: 'C1', value: counts.C1, bg: '#fca5a5', text: '#7f1d1d' },
-        { label: 'C2', value: counts.C2, bg: '#d8b4fe', text: '#3b0764' }
-    ];
-    const offItemRaw = { label: 'Off List', value: counts.Off, bg: '#e5e7eb', text: '#6b7280' };
+        const cefrItems = [
+            { label: 'A1', value: counts.A1, bg: '#d1fae5', text: '#065f46' },
+            { label: 'A2', value: counts.A2, bg: '#a7f3d0', text: '#064e3b' },
+            { label: 'B1', value: counts.B1, bg: '#fef3c7', text: '#92400e' },
+            { label: 'B2', value: counts.B2, bg: '#fde68a', text: '#78350f' },
+            { label: 'C1', value: counts.C1, bg: '#fca5a5', text: '#7f1d1d' },
+            { label: 'C2', value: counts.C2, bg: '#d8b4fe', text: '#3b0764' }
+        ];
+        const offItem = { label: 'Off List', value: counts.Off, bg: '#e5e7eb', text: '#6b7280' };
 
-    const cW = container.offsetWidth;
-    const cH = container.offsetHeight;
-    if (cW === 0 || cH === 0) return;
+        const cW = container.offsetWidth;
+        const cH = container.offsetHeight;
+        if (cW === 0 || cH === 0) return;
 
-    /* -------- active items -------- */
-    const activeCefr = cefrItemsRaw.filter(d => d.value > 0);
-    const hasOff = offItemRaw.value > 0;
-    const allActive = [...activeCefr, ...(hasOff ? [offItemRaw] : [])];
-    if (allActive.length === 0) return;
+        const cefrTotal = cefrItems.reduce((s, d) => s + d.value, 0);
+        const grandTotal = cefrTotal + offItem.value;
+        if (grandTotal === 0) return;
 
-    /* ======== LAYER 1 — inflate small values for layout ======== */
-    const containerArea = cW * cH;
-    // Each cell must occupy at least this many px²; responsive to screen size
-    const MIN_CELL_AREA = Math.max(3200, containerArea * 0.024);
-    const totalValue = allActive.reduce((s, d) => s + d.value, 0);
-    // 1.35× fudge compensates for the inflated-total feedback effect
-    const minLayoutValue = Math.max(1, (MIN_CELL_AREA / containerArea) * totalValue * 1.35);
+        // --- NEW LOGIC: Power Scale (Non-linear scaling) ---
+        // This ensures that large values still look noticeably larger than small values,
+        // but tiny values (like 1 or 2) are "boosted" enough so their text isn't chopped off.
+        // An exponent of 0.6 provides a beautiful balance between proportionality and readability.
+        const EXPONENT = 0.6; 
 
-    const cefrItems = activeCefr.map(d => ({
-        ...d,
-        displayValue: d.value,                       // keep truthful number
-        value: Math.max(d.value, minLayoutValue)      // inflate for layout
-    }));
-    const offItem = hasOff ? {
-        ...offItemRaw,
-        displayValue: offItemRaw.value,
-        value: Math.max(offItemRaw.value, minLayoutValue)
-    } : null;
+        cefrItems.forEach(item => {
+            item.layoutWeight = item.value > 0 ? Math.pow(item.value, EXPONENT) : 0;
+        });
+        offItem.layoutWeight = offItem.value > 0 ? Math.pow(offItem.value, EXPONENT) : 0;
 
-    /* ======== LAYER 2 — minimum column widths ======== */
-    const cefrTotal = cefrItems.reduce((s, d) => s + d.value, 0);
-    const grandTotal = cefrTotal + (offItem ? offItem.value : 0);
-    const MIN_COL_WIDTH = 64;
-    let allCells = [];
+        const layoutCefrTotal = cefrItems.reduce((s, d) => s + d.layoutWeight, 0);
+        const layoutGrandTotal = layoutCefrTotal + offItem.layoutWeight;
+        // ---------------------------------------------------
 
-    if (cefrTotal > 0 && offItem) {
-        let cefrWidth = Math.round((cefrTotal / grandTotal) * cW);
-        let offWidth  = cW - cefrWidth;
-        if (offWidth  < MIN_COL_WIDTH) { offWidth  = MIN_COL_WIDTH; cefrWidth = cW - offWidth; }
-        if (cefrWidth < MIN_COL_WIDTH) { cefrWidth = MIN_COL_WIDTH; offWidth  = cW - cefrWidth; }
-        allCells = treemapLayout(cefrItems, { x: 0, y: 0, w: cefrWidth, h: cH });
-        allCells.push({ ...offItem, x: cefrWidth, y: 0, w: offWidth, h: cH });
-    } else if (cefrTotal > 0) {
-        allCells = treemapLayout(cefrItems, { x: 0, y: 0, w: cW, h: cH });
-    } else if (offItem) {
-        allCells.push({ ...offItem, x: 0, y: 0, w: cW, h: cH });
+        let allCells = [];
+
+        if (cefrTotal > 0 && offItem.value > 0) {
+            const cefrWidth = Math.round((layoutCefrTotal / layoutGrandTotal) * cW);
+            const offWidth = cW - cefrWidth;
+            allCells = treemapLayout(cefrItems, { x: 0, y: 0, w: cefrWidth, h: cH });
+            allCells.push({ ...offItem, x: cefrWidth, y: 0, w: offWidth, h: cH });
+        } else if (cefrTotal > 0) {
+            allCells = treemapLayout(cefrItems, { x: 0, y: 0, w: cW, h: cH });
+        } else {
+            allCells.push({ ...offItem, x: 0, y: 0, w: cW, h: cH });
+        }
+
+        const tooltip = document.getElementById('treemap-tooltip');
+
+        allCells.forEach((cell, idx) => {
+            if (!cell.value || cell.value <= 0) return;
+            const pct = calcPct(cell.value);
+            const div = document.createElement('div');
+            div.className = 'treemap-cell';
+            div.style.left   = cell.x + 'px';
+            div.style.top    = cell.y + 'px';
+            div.style.width  = cell.w + 'px';
+            div.style.height = cell.h + 'px';
+            div.style.backgroundColor = cell.bg;
+            div.style.color  = cell.text;
+            div.style.animationDelay = (idx * 55) + 'ms';
+
+            const minDim = Math.min(cell.w, cell.h);
+            const area   = cell.w * cell.h;
+            let sizeClass = 'size-lg';
+            if      (minDim < 26 || area < 1000)   sizeClass = 'size-dot';
+            else if (minDim < 36 || area < 2000)   sizeClass = 'size-xxs';
+            else if (minDim < 48 || area < 3500)   sizeClass = 'size-xs';
+            else if (minDim < 65 || area < 6000)   sizeClass = 'size-sm';
+            else if (minDim < 95 || area < 12000)  sizeClass = 'size-md';
+            div.classList.add(sizeClass);
+
+            div.innerHTML = `
+                <span class="treemap-cell-level">${cell.label}</span>
+                <span class="treemap-cell-count">${cell.value}</span>
+                <span class="treemap-cell-percent">${pct}%</span>
+            `;
+
+            div.addEventListener('mouseenter', () => {
+                tooltip.textContent = `${cell.label}: ${cell.value} words (${pct}%)`;
+                tooltip.classList.add('visible');
+            });
+            div.addEventListener('mousemove', e => {
+                tooltip.style.left = (e.clientX + 14) + 'px';
+                tooltip.style.top  = (e.clientY - 36) + 'px';
+            });
+            div.addEventListener('mouseleave', () => tooltip.classList.remove('visible'));
+
+            container.appendChild(div);
+        });
     }
-
-    /* ======== LAYER 3 — hard-minimum dimensions (safety net) ======== */
-    const MIN_W = 48, MIN_H = 40;
-    allCells.forEach(cell => {
-        const dv = cell.displayValue !== undefined ? cell.displayValue : cell.value;
-        if (dv > 0) {
-            if (cell.w < MIN_W) {
-                cell.w = MIN_W;
-                if (cell.x + cell.w > cW) cell.x = Math.max(0, cW - cell.w);
-            }
-            if (cell.h < MIN_H) {
-                cell.h = MIN_H;
-                if (cell.y + cell.h > cH) cell.y = Math.max(0, cH - cell.h);
-            }
-        }
-    });
-
-    /* -------- render -------- */
-    const tooltip = document.getElementById('treemap-tooltip');
-
-    allCells.forEach((cell, idx) => {
-        const dv = cell.displayValue !== undefined ? cell.displayValue : cell.value;
-        if (!dv || dv <= 0) return;
-        const pct = calcPct(dv);
-        const div = document.createElement('div');
-        div.className = 'treemap-cell';
-        div.style.left   = cell.x + 'px';
-        div.style.top    = cell.y + 'px';
-        div.style.width  = cell.w + 'px';
-        div.style.height = cell.h + 'px';
-        div.style.backgroundColor = cell.bg;
-        div.style.color  = cell.text;
-        div.style.animationDelay = (idx * 55) + 'ms';
-
-        // Smaller cells get higher z-index so they stack on top of neighbors
-        const cellArea = cell.w * cell.h;
-        if (cellArea < 10000) {
-            div.style.zIndex = String(Math.max(2, 10 - Math.floor(cellArea / 1000)));
-        }
-
-        const minDim = Math.min(cell.w, cell.h);
-        let sizeClass = 'size-lg';
-        if      (minDim < 22 || cellArea < 700)   sizeClass = 'size-dot';
-        else if (minDim < 32 || cellArea < 1500)   sizeClass = 'size-xxs';
-        else if (minDim < 46 || cellArea < 3200)   sizeClass = 'size-xs';
-        else if (minDim < 62 || cellArea < 5500)   sizeClass = 'size-sm';
-        else if (minDim < 90 || cellArea < 12000)  sizeClass = 'size-md';
-        div.classList.add(sizeClass);
-
-        div.innerHTML = `
-            <span class="treemap-cell-level">${cell.label}</span>
-            <span class="treemap-cell-count">${dv}</span>
-            <span class="treemap-cell-percent">${pct}%</span>
-        `;
-
-        div.addEventListener('mouseenter', () => {
-            tooltip.textContent = `${cell.label}: ${dv} words (${pct}%)`;
-            tooltip.classList.add('visible');
-        });
-        div.addEventListener('mousemove', e => {
-            tooltip.style.left = (e.clientX + 14) + 'px';
-            tooltip.style.top  = (e.clientY - 36) + 'px';
-        });
-        div.addEventListener('mouseleave', () => tooltip.classList.remove('visible'));
-
-        container.appendChild(div);
-    });
-}
 
     let resizeTimer;
     window.addEventListener('resize', () => {
@@ -1255,9 +1221,6 @@
 
         const b2 = (pB2>=5||(pB2>=3&&pAdvanced>=0.5&&sentComplexity>=1.5)||(pB2>=3&&uniqueB2>=5)||pB2Plus>=6||(p95Level==='B2'&&pB2>=3)||(avgDifficulty>=2.5&&pB1Plus>=15));
 
-        // ★ CHANGED: tightened B1 trigger — raised pB1Plus threshold (8→10) and
-        //   lowered pBasic threshold (82→75) so off-list proper nouns don't falsely
-        //   inflate the level for simple texts
         const b1 = (pB1>=5||pB1Plus>=10||(pB1>=3&&pB2>=1)||avgDifficulty>=2.0||(p95Level==='B1'&&pB1>=3)||pBasic<75);
 
         const a2 = (pBasic<90||pB1>=2||avgSentLen>=8);
@@ -1269,10 +1232,8 @@
         else if (a2) { level='A2'; confidence='high'; factors.push(`${pBasic.toFixed(1)}% basic (A1+A2) vocabulary`); }
         else { level='A1'; confidence='high'; factors.push(`${pBasic.toFixed(1)}% basic (A1+A2) vocabulary`); }
 
-        // Existing guard: no C1/C2 words in list at all
         if(counts.C1===0&&counts.C2===0&&literaryOffListCount<2&&difficultOffList.length<4&&sentComplexity<3.5&&styleComplexity<2.5&&(level==='C1'||level==='C2')){level='B2';confidence='medium';factors.push('no C1/C2 vocabulary detected in word list');}
 
-        // Strengthened guard — downgrade C1 when style/syntax evidence is weak
         if (level === 'C1' && styleComplexity < 1.5 && sentComplexity < 3.5) {
             if (pAdvanced < 3.5 && uniqueAdvanced < 6) {
                 level = 'B2'; confidence = 'medium';
@@ -1286,12 +1247,6 @@
         if(level==='C2'&&uniqueC2<2&&!(sentComplexity>=4&&styleComplexity>=3&&effectiveAdvancedPct>=5)){level='C1';confidence='medium';factors.push('insufficient evidence for C2, downgraded to C1');}
         if(textStyle.isSimple&&sentComplexity<2&&(level==='B2'||level==='C1')){const lo=['A1','A2','B1','B2','C1','C2'];level=lo[Math.max(lo.indexOf(level)-1,0)];factors.push('simple text structure');if(confidence==='high')confidence='medium';}
 
-        // ★ NEW: Guard — downgrade B1 to A2 for simple texts with marginal B1 evidence.
-        //   A text should only be rated B1 if it has EITHER strong B1 vocabulary
-        //   (≥10% B1 or ≥12 unique B1 types) OR moderate B1 vocabulary (≥6%) combined
-        //   with notable sentence complexity (≥2.0) or avg difficulty (≥1.8).
-        //   If neither condition holds and the on-list vocabulary is predominantly
-        //   basic, the text is more accurately classified as A2.
         if (level === 'B1' && pB2Plus < 2.5) {
             const onListBasicPct = onListWords > 0 ? ((counts.A1 + counts.A2) / onListWords) * 100 : 100;
             const uniqueB1Count = wordsByLevel.B1 ? wordsByLevel.B1.size : 0;
